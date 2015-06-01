@@ -11,6 +11,8 @@
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="Ftk-zE-wg7">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
+                        <color key="tintColor" red="0.36078431372549019" green="0.32549019607843138" blue="0.31764705882352939" alpha="1" colorSpace="calibratedRGB"/>
+                        <color key="barTintColor" red="0.58431372549019611" green="0.54117647058823526" blue="0.53333333333333333" alpha="1" colorSpace="calibratedRGB"/>
                     </navigationBar>
                     <connections>
                         <segue destination="JOT-nI-nXi" kind="relationship" relationship="rootViewController" id="WcE-pK-lf6"/>
@@ -20,7 +22,7 @@
             </objects>
             <point key="canvasLocation" x="-525" y="-166"/>
         </scene>
-        <!--Notes-->
+        <!--Table View Controller-->
         <scene sceneID="YfN-nL-wQH">
             <objects>
                 <tableViewController storyboardIdentifier="TableViewController" useStoryboardIdentifierAsRestorationIdentifier="YES" id="JOT-nI-nXi" customClass="TableViewController" customModule="NoteTaker" customModuleProvider="target" sceneMemberID="viewController">
@@ -28,32 +30,33 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="tintColor" red="0.36078431372549019" green="0.32549019607843138" blue="0.31764705882352939" alpha="1" colorSpace="calibratedRGB"/>
                         <prototypes>
                             <tableViewCell contentMode="scaleToFill" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" reuseIdentifier="DetailTableViewCell" rowHeight="90" id="svg-cj-KbN" customClass="DetailTableViewCell" customModule="NoteTaker" customModuleProvider="target">
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="svg-cj-KbN" id="QxB-1J-YJN">
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
-                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Title" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2bI-PN-1ZI">
-                                            <rect key="frame" x="10" y="5" width="202" height="30"/>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Title" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2bI-PN-1ZI">
+                                            <rect key="frame" x="10" y="5" width="449" height="30"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="30" id="tJP-kG-efL"/>
                                             </constraints>
                                             <fontDescription key="fontDescription" type="system" pointSize="26"/>
-                                            <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                            <color key="textColor" red="0.36078431370000003" green="0.32549019610000002" blue="0.31764705879999999" alpha="1" colorSpace="calibratedRGB"/>
                                             <nil key="highlightedColor"/>
                                         </label>
-                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="Note text here..." lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Xso-4E-BW8">
-                                            <rect key="frame" x="10" y="35" width="300" height="44"/>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Note text here..." lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Xso-4E-BW8">
+                                            <rect key="frame" x="10" y="35" width="547" height="44"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="44" id="3Uc-pb-Vnv"/>
                                             </constraints>
                                             <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                            <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
-                                            <nil key="highlightedColor"/>
+                                            <color key="textColor" red="0.41176470588235292" green="0.38039215686274508" blue="0.37647058823529411" alpha="1" colorSpace="calibratedRGB"/>
+                                            <color key="highlightedColor" red="0.41176470588235292" green="0.38039215686274508" blue="0.37647058823529411" alpha="1" colorSpace="calibratedRGB"/>
                                         </label>
-                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="9/9/2014" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1oX-lO-eap">
-                                            <rect key="frame" x="222" y="5" width="88" height="21"/>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="9/9/2014" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1oX-lO-eap">
+                                            <rect key="frame" x="469" y="5" width="88" height="21"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="21" id="Kgx-Yq-kSc"/>
                                                 <constraint firstAttribute="width" constant="88" id="vpv-8j-cd5"/>
@@ -78,7 +81,7 @@
                                     <outlet property="noteDateLabel" destination="1oX-lO-eap" id="hzu-JA-BmN"/>
                                     <outlet property="noteTextLabel" destination="Xso-4E-BW8" id="Df6-k4-T4S"/>
                                     <outlet property="noteTitleLabel" destination="2bI-PN-1ZI" id="I83-GX-4mN"/>
-                                    <segue destination="ZZg-jO-NX9" kind="push" id="HEE-Ta-4gH"/>
+                                    <segue destination="ZZg-jO-NX9" kind="show" id="HEE-Ta-4gH"/>
                                 </connections>
                             </tableViewCell>
                         </prototypes>
@@ -87,10 +90,10 @@
                             <outlet property="delegate" destination="JOT-nI-nXi" id="Gtf-AH-jxP"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="Notes" id="6ca-hl-h9h">
+                    <navigationItem key="navigationItem" id="6ca-hl-h9h">
                         <barButtonItem key="rightBarButtonItem" systemItem="add" id="NYL-89-qle">
                             <connections>
-                                <segue destination="ZZg-jO-NX9" kind="push" identifier="NoteDetailAdd" id="DEg-D2-fSS"/>
+                                <segue destination="ZZg-jO-NX9" kind="show" identifier="NoteDetailAdd" id="DEg-D2-fSS"/>
                             </connections>
                         </barButtonItem>
                     </navigationItem>
@@ -100,7 +103,7 @@
             </objects>
             <point key="canvasLocation" x="222" y="-167"/>
         </scene>
-        <!--Note Detail-->
+        <!--Detail View Controller-->
         <scene sceneID="z0W-k5-Gsm">
             <objects>
                 <viewController storyboardIdentifier="DetailViewController" useStoryboardIdentifierAsRestorationIdentifier="YES" id="ZZg-jO-NX9" customClass="DetailViewController" customModule="NoteTaker" customModuleProvider="target" sceneMemberID="viewController">
@@ -115,31 +118,33 @@
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Title" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="pyU-4f-DoR">
                                 <rect key="frame" x="16" y="81" width="61" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                <color key="textColor" red="0.41176470590000003" green="0.3803921569" blue="0.37647058820000001" alpha="1" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Note Title" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="6T9-S7-MGU">
+                            <textField opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="Note Title" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="6T9-S7-MGU">
                                 <rect key="frame" x="16" y="110" width="288" height="30"/>
+                                <color key="textColor" red="0.41176470590000003" green="0.3803921569" blue="0.37647058820000001" alpha="1" colorSpace="calibratedRGB"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Note:" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="x2I-Mr-sbn">
                                 <rect key="frame" x="16" y="155" width="42" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                <color key="textColor" red="0.54117647058823526" green="0.49803921568627452" blue="0.49019607843137253" alpha="1" colorSpace="calibratedRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yi6-I9-UYX">
                                 <rect key="frame" x="16" y="184" width="288" height="128"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <string key="text">Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.</string>
+                                <color key="textColor" red="0.54117647058823526" green="0.49803921568627452" blue="0.49019607843137253" alpha="1" colorSpace="calibratedRGB"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     </view>
-                    <navigationItem key="navigationItem" title="Note Detail" id="88A-WC-BVs">
+                    <navigationItem key="navigationItem" id="88A-WC-BVs">
                         <barButtonItem key="rightBarButtonItem" systemItem="save" id="n4l-6g-zAK">
                             <connections>
                                 <segue destination="VG1-ik-6CA" kind="unwind" unwindAction="saveFromNoteDetail:" id="iRD-0X-sYH"/>

@@ -18,6 +18,7 @@
 		FDF366BC1B1CCD8100B3D890 /* DetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF366BB1B1CCD8100B3D890 /* DetailViewController.swift */; };
 		FDF366BE1B1CCDA500B3D890 /* DetailTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF366BD1B1CCDA500B3D890 /* DetailTableViewCell.swift */; };
 		FDF366C01B1CCDC900B3D890 /* NoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF366BF1B1CCDC900B3D890 /* NoteStore.swift */; };
+		FDF366C21B1CE84700B3D890 /* Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF366C11B1CE84700B3D890 /* Hex.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 		FDF366BB1B1CCD8100B3D890 /* DetailViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailViewController.swift; sourceTree = "<group>"; };
 		FDF366BD1B1CCDA500B3D890 /* DetailTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailTableViewCell.swift; sourceTree = "<group>"; };
 		FDF366BF1B1CCDC900B3D890 /* NoteStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NoteStore.swift; sourceTree = "<group>"; };
+		FDF366C11B1CE84700B3D890 /* Hex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Hex.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +93,7 @@
 				FDF366B61B1CCC7F00B3D890 /* Models */,
 				FDF366981B1CC53900B3D890 /* ViewController.swift */,
 				FDF366B91B1CCD5A00B3D890 /* TableViewController.swift */,
+				FDF366C11B1CE84700B3D890 /* Hex.swift */,
 				FDF366BB1B1CCD8100B3D890 /* DetailViewController.swift */,
 				FDF366BD1B1CCDA500B3D890 /* DetailTableViewCell.swift */,
 				FDF366BF1B1CCDC900B3D890 /* NoteStore.swift */,
@@ -236,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FDF366BE1B1CCDA500B3D890 /* DetailTableViewCell.swift in Sources */,
+				FDF366C21B1CE84700B3D890 /* Hex.swift in Sources */,
 				FDF366991B1CC53900B3D890 /* ViewController.swift in Sources */,
 				FDF366971B1CC53900B3D890 /* AppDelegate.swift in Sources */,
 				FDF366C01B1CCDC900B3D890 /* NoteStore.swift in Sources */,
