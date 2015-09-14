@@ -68,6 +68,33 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		888DBD151C34718100FBE6DA /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				FDF366981B1CC53900B3D890 /* ViewController.swift */,
+				FDF366BB1B1CCD8100B3D890 /* DetailViewController.swift */,
+				FDF366B91B1CCD5A00B3D890 /* TableViewController.swift */,
+			);
+			name = Controllers;
+			sourceTree = "<group>";
+		};
+		888DBD161C3471A300FBE6DA /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FDF366BD1B1CCDA500B3D890 /* DetailTableViewCell.swift */,
+			);
+			name = Views;
+			sourceTree = "<group>";
+		};
+		888DBD171C3471AF00FBE6DA /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				FDF366BF1B1CCDC900B3D890 /* NoteStore.swift */,
+				FDF366C11B1CE84700B3D890 /* Hex.swift */,
+			);
+			name = Helpers;
+			sourceTree = "<group>";
+		};
 		FDF366881B1CC53900B3D890 = {
 			isa = PBXGroup;
 			children = (
@@ -91,12 +118,9 @@
 			children = (
 				FDF366961B1CC53900B3D890 /* AppDelegate.swift */,
 				FDF366B61B1CCC7F00B3D890 /* Models */,
-				FDF366981B1CC53900B3D890 /* ViewController.swift */,
-				FDF366B91B1CCD5A00B3D890 /* TableViewController.swift */,
-				FDF366C11B1CE84700B3D890 /* Hex.swift */,
-				FDF366BB1B1CCD8100B3D890 /* DetailViewController.swift */,
-				FDF366BD1B1CCDA500B3D890 /* DetailTableViewCell.swift */,
-				FDF366BF1B1CCDC900B3D890 /* NoteStore.swift */,
+				888DBD151C34718100FBE6DA /* Controllers */,
+				888DBD171C3471AF00FBE6DA /* Helpers */,
+				888DBD161C3471A300FBE6DA /* Views */,
 				FDF3669A1B1CC53900B3D890 /* Main.storyboard */,
 				FDF3669D1B1CC53900B3D890 /* Images.xcassets */,
 				FDF3669F1B1CC53900B3D890 /* LaunchScreen.xib */,
@@ -182,7 +206,9 @@
 		FDF366891B1CC53900B3D890 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0630;
+				LastSwiftMigration = 0720;
+				LastSwiftUpdateCheck = 0720;
+				LastUpgradeCheck = 0720;
 				ORGANIZATIONNAME = gpj;
 				TargetAttributes = {
 					FDF366901B1CC53900B3D890 = {
@@ -308,6 +334,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -374,6 +401,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = NoteTaker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.gpj.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -384,6 +412,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = NoteTaker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.gpj.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -402,6 +431,7 @@
 				);
 				INFOPLIST_FILE = NoteTakerTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.gpj.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoteTaker.app/NoteTaker";
 			};
@@ -417,6 +447,7 @@
 				);
 				INFOPLIST_FILE = NoteTakerTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.gpj.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoteTaker.app/NoteTaker";
 			};
@@ -441,6 +472,7 @@
 				FDF366B21B1CC53900B3D890 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		FDF366B31B1CC53900B3D890 /* Build configuration list for PBXNativeTarget "NoteTakerTests" */ = {
 			isa = XCConfigurationList;
@@ -449,6 +481,7 @@
 				FDF366B51B1CC53900B3D890 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
