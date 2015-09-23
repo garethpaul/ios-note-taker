@@ -1,11 +1,12 @@
 import UIKit
 
+// Class for DetailTableViewCell
 class DetailTableViewCell : UITableViewCell {
 
     // The note currently being shown
     weak var theNote : Note!
 
-    // Interface builder outlets
+    // MARK: IBOutlet
     @IBOutlet weak var noteTitleLabel : UILabel!
     @IBOutlet weak var noteDateLabel : UILabel!
     @IBOutlet weak var noteTextLabel : UILabel!
