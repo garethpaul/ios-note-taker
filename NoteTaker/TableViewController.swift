@@ -10,9 +10,7 @@ class TableViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
         self.setupNav()
-
         // Leverage the built in TableViewController Edit button
         self.navigationItem.leftBarButtonItem = self.editButtonItem()
     }
@@ -49,7 +47,7 @@ class TableViewController: UITableViewController {
         }
     }
 
-
+    // MARK: IBActions
     @IBAction func saveFromNoteDetail(segue:UIStoryboardSegue) {
         // We come here from an exit segue when they hit save on the detail screen
 
