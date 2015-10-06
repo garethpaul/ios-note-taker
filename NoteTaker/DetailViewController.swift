@@ -7,11 +7,10 @@ import UIKit
 class DetailViewController: UIViewController {
 
     var theNote = Note()
-
     var logoView: UIImageView!
 
+    // MARK: IBOutlet
     @IBOutlet weak var noteTitleLabel: UITextField!
-
     @IBOutlet weak var noteTextView: UITextView!
 
     override func viewDidLoad() {
@@ -31,7 +30,9 @@ class DetailViewController: UIViewController {
         
     }
 
+    // MARK: Nav Helper
     func setupNav() {
+        // Setup Image
         logoView = UIImageView(frame: CGRectMake(0, 0, 30, 30))
         logoView.image = UIImage(named: "miniLogo")?.imageWithRenderingMode(.AlwaysTemplate)
         logoView.frame.origin.x = (self.view.frame.size.width - logoView.frame.size.width) / 2
