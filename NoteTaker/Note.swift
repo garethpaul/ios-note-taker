@@ -4,6 +4,7 @@
 
 import Foundation
 
+// MARK: Note model for storing the note.
 class Note : NSObject, NSCoding {
     var title = ""
     var text = ""
