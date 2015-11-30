@@ -37,7 +37,7 @@ class NoteStore {
     }
 
     // Update
-    func updateNote(#theNote:Note) {
+    func updateNote(theNote theNote:Note) {
         // Notes passed by reference, no update code needed
     }
 
@@ -48,7 +48,7 @@ class NoteStore {
 
     func deleteNote(withNote:Note) {
 
-        for (i, note) in enumerate(notes) {
+        for (i, note) in notes.enumerate() {
             if note === withNote {
                 notes.removeAtIndex(i)
                 return
