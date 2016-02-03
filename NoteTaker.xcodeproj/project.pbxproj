@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		88BA98D51D29B6EE005D4760 /* NoteTakerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88BA98D41D29B6EE005D4760 /* NoteTakerUITests.swift */; };
 		FDF366971B1CC53900B3D890 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF366961B1CC53900B3D890 /* AppDelegate.swift */; };
 		FDF366991B1CC53900B3D890 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF366981B1CC53900B3D890 /* ViewController.swift */; };
 		FDF3669C1B1CC53900B3D890 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FDF3669A1B1CC53900B3D890 /* Main.storyboard */; };
@@ -22,6 +23,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		88BA98D71D29B6EE005D4760 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FDF366891B1CC53900B3D890 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FDF366901B1CC53900B3D890;
+			remoteInfo = NoteTaker;
+		};
 		FDF366A71B1CC53900B3D890 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = FDF366891B1CC53900B3D890 /* Project object */;
@@ -32,6 +40,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		88BA98D21D29B6EE005D4760 /* NoteTakerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoteTakerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		88BA98D41D29B6EE005D4760 /* NoteTakerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteTakerUITests.swift; sourceTree = "<group>"; };
+		88BA98D61D29B6EE005D4760 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FDF366911B1CC53900B3D890 /* NoteTaker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoteTaker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FDF366951B1CC53900B3D890 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FDF366961B1CC53900B3D890 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -51,6 +62,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		88BA98CF1D29B6EE005D4760 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FDF3668E1B1CC53900B3D890 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -95,11 +113,21 @@
 			name = Helpers;
 			sourceTree = "<group>";
 		};
+		88BA98D31D29B6EE005D4760 /* NoteTakerUITests */ = {
+			isa = PBXGroup;
+			children = (
+				88BA98D41D29B6EE005D4760 /* NoteTakerUITests.swift */,
+				88BA98D61D29B6EE005D4760 /* Info.plist */,
+			);
+			path = NoteTakerUITests;
+			sourceTree = "<group>";
+		};
 		FDF366881B1CC53900B3D890 = {
 			isa = PBXGroup;
 			children = (
 				FDF366931B1CC53900B3D890 /* NoteTaker */,
 				FDF366A91B1CC53900B3D890 /* NoteTakerTests */,
+				88BA98D31D29B6EE005D4760 /* NoteTakerUITests */,
 				FDF366921B1CC53900B3D890 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -109,6 +137,7 @@
 			children = (
 				FDF366911B1CC53900B3D890 /* NoteTaker.app */,
 				FDF366A61B1CC53900B3D890 /* NoteTakerTests.xctest */,
+				88BA98D21D29B6EE005D4760 /* NoteTakerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -165,6 +194,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		88BA98D11D29B6EE005D4760 /* NoteTakerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 88BA98DB1D29B6EE005D4760 /* Build configuration list for PBXNativeTarget "NoteTakerUITests" */;
+			buildPhases = (
+				88BA98CE1D29B6EE005D4760 /* Sources */,
+				88BA98CF1D29B6EE005D4760 /* Frameworks */,
+				88BA98D01D29B6EE005D4760 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				88BA98D81D29B6EE005D4760 /* PBXTargetDependency */,
+			);
+			name = NoteTakerUITests;
+			productName = NoteTakerUITests;
+			productReference = 88BA98D21D29B6EE005D4760 /* NoteTakerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		FDF366901B1CC53900B3D890 /* NoteTaker */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FDF366B01B1CC53900B3D890 /* Build configuration list for PBXNativeTarget "NoteTaker" */;
@@ -207,10 +254,14 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftMigration = 0720;
-				LastSwiftUpdateCheck = 0720;
+				LastSwiftUpdateCheck = 0730;
 				LastUpgradeCheck = 0720;
 				ORGANIZATIONNAME = gpj;
 				TargetAttributes = {
+					88BA98D11D29B6EE005D4760 = {
+						CreatedOnToolsVersion = 7.3.1;
+						TestTargetID = FDF366901B1CC53900B3D890;
+					};
 					FDF366901B1CC53900B3D890 = {
 						CreatedOnToolsVersion = 6.3.2;
 					};
@@ -235,11 +286,19 @@
 			targets = (
 				FDF366901B1CC53900B3D890 /* NoteTaker */,
 				FDF366A51B1CC53900B3D890 /* NoteTakerTests */,
+				88BA98D11D29B6EE005D4760 /* NoteTakerUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		88BA98D01D29B6EE005D4760 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FDF3668F1B1CC53900B3D890 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -260,6 +319,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		88BA98CE1D29B6EE005D4760 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				88BA98D51D29B6EE005D4760 /* NoteTakerUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FDF3668D1B1CC53900B3D890 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -286,6 +353,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		88BA98D81D29B6EE005D4760 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FDF366901B1CC53900B3D890 /* NoteTaker */;
+			targetProxy = 88BA98D71D29B6EE005D4760 /* PBXContainerItemProxy */;
+		};
 		FDF366A81B1CC53900B3D890 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = FDF366901B1CC53900B3D890 /* NoteTaker */;
@@ -313,6 +385,33 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		88BA98D91D29B6EE005D4760 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				INFOPLIST_FILE = NoteTakerUITests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.gpj.NoteTakerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_TARGET_NAME = NoteTaker;
+			};
+			name = Debug;
+		};
+		88BA98DA1D29B6EE005D4760 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				INFOPLIST_FILE = NoteTakerUITests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.gpj.NoteTakerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_TARGET_NAME = NoteTaker;
+			};
+			name = Release;
+		};
 		FDF366AE1B1CC53900B3D890 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -460,6 +559,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		88BA98DB1D29B6EE005D4760 /* Build configuration list for PBXNativeTarget "NoteTakerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				88BA98D91D29B6EE005D4760 /* Debug */,
+				88BA98DA1D29B6EE005D4760 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
 		FDF3668C1B1CC53900B3D890 /* Build configuration list for PBXProject "NoteTaker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
