@@ -38,6 +38,16 @@
                ReferencedContainer = "container:NoteTaker.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "88BA98D11D29B6EE005D4760"
+               BuildableName = "NoteTakerUITests.xctest"
+               BlueprintName = "NoteTakerUITests"
+               ReferencedContainer = "container:NoteTaker.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <MacroExpansion>
          <BuildableReference
