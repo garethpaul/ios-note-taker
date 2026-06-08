@@ -39,11 +39,16 @@ class TableViewController: UITableViewController {
         // Here we pass the note they tapped on between the view controllers
         if segue.identifier == "NoteDetailPush" {
             // Get the controller we are going to
-            let noteDetail = segue.destinationViewController as! DetailViewController
+            guard let noteDetail = segue.destinationViewController as? DetailViewController else {
+                return
+            }
             // Lookup the data we want to pass
-            let theCell = sender as! DetailTableViewCell
+            guard let theCell = sender as? DetailTableViewCell,
+                let theNote = theCell.theNote else {
+                    return
+            }
             // Pass the data forward
-            noteDetail.theNote = theCell.theNote
+            noteDetail.theNote = theNote
         }
     }
 
@@ -52,7 +57,9 @@ class TableViewController: UITableViewController {
         // We come here from an exit segue when they hit save on the detail screen
 
         // Get the controller we are coming from
-        let noteDetail = segue.sourceViewController as! DetailViewController
+        guard let noteDetail = segue.sourceViewController as? DetailViewController else {
+            return
+        }
 
         // If there is a row selected....
         if let indexPath = tableView.indexPathForSelectedRow {
@@ -83,7 +90,9 @@ class TableViewController: UITableViewController {
 
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         // Fetch a reusable cell
-        let cell = tableView.dequeueReusableCellWithIdentifier("DetailTableViewCell", forIndexPath: indexPath) as! DetailTableViewCell
+        guard let cell = tableView.dequeueReusableCellWithIdentifier("DetailTableViewCell", forIndexPath: indexPath) as? DetailTableViewCell else {
+            return UITableViewCell()
+        }
 
         // Fetch the note
         let rowNumber = indexPath.row

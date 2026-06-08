@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import plistlib
+import re
+import shutil
+import sys
+import xml.etree.ElementTree as ET
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PLAN = ROOT / "docs/plans/2026-06-08-note-taker-baseline.md"
+
+
+def require(condition, message, failures):
+    if not condition:
+        failures.append(message)
+
+
+def read(relative_path):
+    return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
+
+
+def strip_swift_line_comments(text):
+    return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
+
+
+def parse_xml(relative_path, failures):
+    try:
+        ET.parse(str(ROOT / relative_path))
+    except ET.ParseError as error:
+        failures.append(f"{relative_path} is not well-formed XML: {error}")
+
+
+def parse_plist(relative_path, failures):
+    try:
+        with (ROOT / relative_path).open("rb") as file:
+            return plistlib.load(file)
+    except Exception as error:
+        failures.append(f"{relative_path} is not a readable plist: {error}")
+        return {}
+
+
+def main():
+    failures = []
+    required_files = [
+        ".gitignore",
+        ".travis.yml",
+        "CHANGES.md",
+        "Makefile",
+        "README.md",
+        "SECURITY.md",
+        "VISION.md",
+        "build.sh",
+        "NoteTaker.xcodeproj/project.pbxproj",
+        "NoteTaker.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "NoteTaker.xcodeproj/xcshareddata/xcschemes/NoteTaker.xcscheme",
+        "NoteTaker.xcodeproj/xcshareddata/xcschemes/NoteTakerTests.xcscheme",
+        "NoteTaker/Info.plist",
+        "NoteTaker/AppDelegate.swift",
+        "NoteTaker/DetailTableViewCell.swift",
+        "NoteTaker/DetailViewController.swift",
+        "NoteTaker/Hex.swift",
+        "NoteTaker/Note.swift",
+        "NoteTaker/NoteStore.swift",
+        "NoteTaker/TableViewController.swift",
+        "NoteTaker/ViewController.swift",
+        "NoteTaker/Base.lproj/Main.storyboard",
+        "NoteTaker/Base.lproj/LaunchScreen.xib",
+        "NoteTakerTests/Info.plist",
+        "NoteTakerTests/NoteTakerTests.swift",
+        "NoteTakerUITests/Info.plist",
+        "NoteTakerUITests/NoteTakerUITests.swift",
+        "docs/readme-overview.svg",
+        "docs/plans/2026-06-08-note-taker-baseline.md",
+        "img/app.gif",
+    ]
+
+    for relative_path in required_files:
+        require((ROOT / relative_path).is_file(), f"Required file missing: {relative_path}", failures)
+
+    for xml_file in [
+        "NoteTaker.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "NoteTaker.xcodeproj/xcshareddata/xcschemes/NoteTaker.xcscheme",
+        "NoteTaker.xcodeproj/xcshareddata/xcschemes/NoteTakerTests.xcscheme",
+        "NoteTaker/Base.lproj/Main.storyboard",
+        "NoteTaker/Base.lproj/LaunchScreen.xib",
+        "docs/readme-overview.svg",
+    ]:
+        parse_xml(xml_file, failures)
+
+    app_plist = parse_plist("NoteTaker/Info.plist", failures)
+    test_plist = parse_plist("NoteTakerTests/Info.plist", failures)
+    ui_test_plist = parse_plist("NoteTakerUITests/Info.plist", failures)
+    project = read("NoteTaker.xcodeproj/project.pbxproj")
+    build = read("build.sh")
+    note = read("NoteTaker/Note.swift")
+    store = read("NoteTaker/NoteStore.swift")
+    detail = read("NoteTaker/DetailViewController.swift")
+    table = read("NoteTaker/TableViewController.swift")
+    hex_source = read("NoteTaker/Hex.swift")
+    app_sources = "\n".join(strip_swift_line_comments(path.read_text(encoding="utf-8", errors="replace"))
+                            for path in sorted((ROOT / "NoteTaker").glob("*.swift")))
+    readme = read("README.md")
+    vision = read("VISION.md")
+    security = read("SECURITY.md")
+    changes = read("CHANGES.md")
+    gitignore = read(".gitignore")
+    plan = PLAN.read_text(encoding="utf-8") if PLAN.exists() else ""
+
+    require(app_plist.get("CFBundlePackageType") == "APPL",
+            "NoteTaker Info.plist must remain an application plist",
+            failures)
+    require(test_plist.get("CFBundlePackageType") == "BNDL" and ui_test_plist.get("CFBundlePackageType") == "BNDL",
+            "NoteTaker test plists must remain bundle plists",
+            failures)
+    for source in ["NoteStore.swift", "Note.swift", "TableViewController.swift", "DetailViewController.swift", "Hex.swift"]:
+        require(source in project, f"Xcode project must keep source reference: {source}", failures)
+    app_scheme = read("NoteTaker.xcodeproj/xcshareddata/xcschemes/NoteTaker.xcscheme")
+    test_scheme = read("NoteTaker.xcodeproj/xcshareddata/xcschemes/NoteTakerTests.xcscheme")
+    require('BlueprintName = "NoteTaker"' in app_scheme and
+            'BlueprintName = "NoteTakerTests"' in test_scheme,
+            "Shared Xcode schemes must remain parseable and named",
+            failures)
+    require("IPHONEOS_DEPLOYMENT_TARGET = 8.3;" in project and "IPHONEOS_DEPLOYMENT_TARGET = 9.3;" in project,
+            "Xcode project must preserve legacy app/test deployment targets",
+            failures)
+
+    require('as? String ?? ""' in note and "as? NSDate ?? NSDate()" in note,
+            "Note decoding must tolerate missing or incompatible archived fields",
+            failures)
+    require("notes.append(theNote)\n        save()" in store,
+            "createNote must save after appending a note",
+            failures)
+    update_note = re.search(r"func updateNote[\s\S]+?\n    }", store)
+    require(update_note is not None and "save()" in update_note.group(0),
+            "updateNote must persist edited note content",
+            failures)
+    require("if index < 0 || index >= notes.count" in store and "notes.removeAtIndex(index)\n        save()" in store,
+            "deleteNote(index:) must guard invalid indexes and save deletes",
+            failures)
+    require("guard let firstPath = paths.first" in store and "NoteStore.plist" in store,
+            "archiveFilePath must guard missing Documents paths and use the local note archive",
+            failures)
+    require("_ = NSKeyedArchiver.archiveRootObject(notes, toFile: archiveFilePath())" in store,
+            "save must call NSKeyedArchiver without ignoring analyzer-visible return handling",
+            failures)
+    require("as? [Note]" in store and "notes = [Note]()" in store,
+            "load must fall back to an empty note list for invalid archives",
+            failures)
+    require("stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())" in detail and
+            'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in detail and
+            'self.noteTextView.text ?? ""' in detail,
+            "DetailViewController must trim blank titles and avoid force-unwrapping note fields",
+            failures)
+    require("as? DetailViewController" in table and "as? DetailTableViewCell" in table and "as? DetailTableViewCell" in table,
+            "TableViewController must guard storyboard casts",
+            failures)
+    require("return UITableViewCell()" in table,
+            "TableViewController must return a fallback cell for unexpected storyboard wiring",
+            failures)
+    require("let scanner = NSScanner(string: cString)" in hex_source and "scanner.atEnd" in hex_source,
+            "Hex parser must reject partial invalid scans",
+            failures)
+
+    require("function ci_build" not in build and "ci_build()" in build,
+            "build.sh must use POSIX function syntax",
+            failures)
+    require("command -v xcodebuild" in build and "xcodebuild unavailable" in build,
+            "build.sh must skip cleanly on hosts without Xcode",
+            failures)
+    require("SIMULATOR_NAME" in build,
+            "build.sh must allow overriding the legacy simulator name",
+            failures)
+    require(not re.search(r"\b(?:print|println|NSLog)\s*\(", app_sources),
+            "Note content and storage state must not be logged",
+            failures)
+    require("as!" not in app_sources,
+            "App sources must avoid force-casts in note and storyboard flows",
+            failures)
+    for forbidden in ["URLSession", "NSURLConnection", "NSURL", "http://", "https://", "upload", "analytics"]:
+        require(forbidden not in app_sources,
+                f"Note app must not add sync, upload, analytics, or network behavior: {forbidden}",
+                failures)
+    swift_files = sorted((ROOT / "NoteTaker").glob("*.swift")) + sorted((ROOT / "NoteTakerTests").glob("*.swift")) + sorted((ROOT / "NoteTakerUITests").glob("*.swift"))
+    require(len(swift_files) >= 10,
+            "expected Swift source/test inventory is missing",
+            failures)
+    require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
+            ".gitignore must exclude local config and Xcode build products",
+            failures)
+    require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower(),
+            "README must document static verification and local note persistence",
+            failures)
+    require("scripts/check-baseline.py" in vision and "local-first" in vision.lower(),
+            "VISION must describe the current static local-first baseline",
+            failures)
+    require("note content" in security.lower() and "make check" in security and "local" in security.lower(),
+            "SECURITY must document note-content privacy and static baseline guardrails",
+            failures)
+    require("persist" in changes.lower() and "archive" in changes.lower() and "make check" in changes,
+            "CHANGES must record persistence hardening and baseline",
+            failures)
+    require("status: completed" in plan,
+            "plan must be marked completed",
+            failures)
+
+    if shutil.which("xcodebuild"):
+        print("xcodebuild is available; run ./build.sh or Xcode tests before release.")
+    else:
+        print("xcodebuild unavailable; static iOS baseline only.")
+
+    if failures:
+        for failure in failures:
+            print(failure, file=sys.stderr)
+        return 1
+
+    print("ios-note-taker baseline checks passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

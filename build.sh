@@ -2,7 +2,12 @@
 
 set -eu
 
-function ci_build() {
+if ! command -v xcodebuild >/dev/null 2>&1; then
+    echo "xcodebuild unavailable; skipping Xcode build on this host."
+    exit 0
+fi
+
+ci_build() {
     NAME=$1
     xcodebuild -project "NoteTaker.xcodeproj" \
                -scheme "NoteTaker" \
@@ -13,4 +18,4 @@ function ci_build() {
 }
 
 
-ci_build "iPhone 5"
+ci_build "${SIMULATOR_NAME:-iPhone 5}"

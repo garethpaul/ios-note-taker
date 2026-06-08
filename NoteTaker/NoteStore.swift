@@ -27,6 +27,7 @@ class NoteStore {
 
     func createNote(theNote:Note = Note()) -> Note {
         notes.append(theNote)
+        save()
         return theNote
     }
 
@@ -39,11 +40,16 @@ class NoteStore {
     // Update
     func updateNote(theNote theNote:Note) {
         // Notes passed by reference, no update code needed
+        save()
     }
 
     // Delete
     func deleteNote(index:Int) {
+        if index < 0 || index >= notes.count {
+            return
+        }
         notes.removeAtIndex(index)
+        save()
     }
 
     func deleteNote(withNote:Note) {
@@ -51,6 +57,7 @@ class NoteStore {
         for (i, note) in notes.enumerate() {
             if note === withNote {
                 notes.removeAtIndex(i)
+                save()
                 return
             }
         }
@@ -68,7 +75,10 @@ class NoteStore {
     // 1: Find the file & directory we want to save to...
     func archiveFilePath() -> String {
         let paths = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)
-        let documentsDirectory = paths.first as! NSString
+        guard let firstPath = paths.first else {
+            return "NoteStore.plist"
+        }
+        let documentsDirectory = firstPath as NSString
         let path = documentsDirectory.stringByAppendingPathComponent("NoteStore.plist")
 
         return path
@@ -76,7 +86,7 @@ class NoteStore {
 
     // 2: Do the save to disk.....
     func save() {
-        NSKeyedArchiver.archiveRootObject(notes, toFile: archiveFilePath())
+        _ = NSKeyedArchiver.archiveRootObject(notes, toFile: archiveFilePath())
     }
 
 
@@ -86,7 +96,11 @@ class NoteStore {
         let fileManager = NSFileManager.defaultManager()
 
         if fileManager.fileExistsAtPath(filePath) {
-            notes = NSKeyedUnarchiver.unarchiveObjectWithFile(filePath) as! [Note]
+            if let archivedNotes = NSKeyedUnarchiver.unarchiveObjectWithFile(filePath) as? [Note] {
+                notes = archivedNotes
+            } else {
+                notes = [Note]()
+            }
         } else {
             notes = [Note]()
         }

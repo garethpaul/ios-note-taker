@@ -21,6 +21,13 @@ xcuserdata
 *.xccheckout
 *.moved-aside
 *.xcuserstate
+.DS_Store
+*.local.xcconfig
+*.secrets.xcconfig
+.env
+.env.*
+__pycache__/
+*.pyc
 
 ## Obj-C/Swift specific
 *.hmap
