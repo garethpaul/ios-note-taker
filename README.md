@@ -1,5 +1,8 @@
 # ios-note-taker
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/ios-note-taker` is an Apple platform application or Swift sample. A simple note taker for ios
@@ -76,4 +79,3 @@ Keep changes small and tied to the project that is already present in this repos
 Prior README summary:
 
 > [![Build Status](https://travis-ci.org/garethpaul/ios-note-taker.svg?branch=master)](https://travis-ci.org/garethpaul/ios-note-taker) iOS Note Taking App <!-- README-OVERVIEW-IMAGE --> <p> A simple note taking app 📓</p>
-
