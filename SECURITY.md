@@ -25,9 +25,9 @@ Helpful reports include:
 ## Project Security Posture
 
 - This repository appears to be an Apple platform application or Swift sample. The active security scope is the code and documentation on the default branch.
-- Note content is sensitive local app data. The current app stores notes locally through `NoteStore.plist` and should not log, sync, upload, analyze, or transmit note content.
+- Note content is sensitive local app data. The current app stores notes locally through `NoteStore.plist`, applies platform file protection after successful saves, and should not log, sync, upload, analyze, or transmit note content.
 - Persistence, archive decoding, export, sharing, sync, analytics, or network changes should receive security-focused review before merge.
-- Run `make check` before merging changes; it verifies plist/storyboard/scheme metadata, local persistence hardening, archive fallback behavior, source inventory, and note-content privacy guardrails.
+- Run `make check` before merging changes; it verifies plist/storyboard/scheme metadata, local persistence hardening, archive file protection, archive fallback behavior, source inventory, and note-content privacy guardrails.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 
 ## Mobile Privacy Notes

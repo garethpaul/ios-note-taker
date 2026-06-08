@@ -3,6 +3,7 @@
 ## 2026-06-08
 
 - Saved notes after create, edit, and delete operations so local note changes persist.
+- Applied complete file protection to the local note archive after successful saves.
 - Guarded archived note decoding and local archive loading so corrupt or incompatible files fall back to an empty note list.
 - Trimmed blank note titles to `Untitled` and avoided force-unwrapping note text fields.
 - Guarded storyboard casts in table/detail flows and rejected invalid delete indexes.

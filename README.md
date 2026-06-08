@@ -53,7 +53,7 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - Open `NoteTaker.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
 - Run `./build.sh` when the required platform toolchain is installed. Set
   `SIMULATOR_NAME` to override the legacy default simulator.
-- Notes are local app data stored through `NoteStore.plist` in the app documents area. The app does not sync, upload, or analyze note content.
+- Notes are local app data stored through `NoteStore.plist` in the app documents area with platform file protection applied after successful saves. The app does not sync, upload, or analyze note content.
 
 ## Testing and Verification
 
@@ -63,7 +63,7 @@ Run the local static baseline:
 make check
 ```
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies local note persistence hardening, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
+The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies local note persistence hardening and archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
 For full legacy verification on macOS, run `./build.sh`, Xcode's test action, or `xcodebuild test` with the appropriate scheme and destination.
 
@@ -77,7 +77,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Security and Privacy Notes
 
 - Notes can contain sensitive personal information. Keep note content local by default, avoid logging note content, and require explicit design before adding sync, upload, analytics, or export behavior.
-- `scripts/check-baseline.py` verifies local persistence saves, archive fallback behavior, storyboard cast guards, invalid hex fallback, and static privacy guardrails.
+- `scripts/check-baseline.py` verifies local persistence saves, archive file protection, archive fallback behavior, storyboard cast guards, invalid hex fallback, and static privacy guardrails.
 
 ## Maintenance Notes
 

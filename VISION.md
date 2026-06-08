@@ -19,6 +19,7 @@ Priority:
 - Preserve note list, note detail, and storage behavior
 - Keep tests and UI test scaffolding aligned with app flow
 - Avoid syncing or uploading notes without explicit design
+- Keep the local note archive protected after successful saves
 - Maintain build script and README context
 - Keep `scripts/check-baseline.py` passing for local-first persistence,
   archive fallback behavior, storyboard guards, and note-content privacy
@@ -48,8 +49,8 @@ explicit.
 
 Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
 It verifies plist/storyboard/scheme metadata, local `NoteStore.plist`
-persistence, archive fallback behavior, and no logging, sync, analytics, upload,
-or network behavior in app sources.
+persistence, archive file protection, archive fallback behavior, and no logging,
+sync, analytics, upload, or network behavior in app sources.
 
 ## What We Will Not Merge (For Now)
 

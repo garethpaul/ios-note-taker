@@ -8,7 +8,8 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = ROOT / "docs/plans/2026-06-08-note-taker-baseline.md"
+BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-note-taker-baseline.md"
+FILE_PROTECTION_PLAN = ROOT / "docs/plans/2026-06-08-note-file-protection.md"
 
 
 def require(condition, message, failures):
@@ -22,6 +23,16 @@ def read(relative_path):
 
 def strip_swift_line_comments(text):
     return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
+
+
+def require_order(text, tokens, message, failures):
+    position = -1
+    for token in tokens:
+        next_position = text.find(token, position + 1)
+        if next_position == -1:
+            failures.append(message)
+            return
+        position = next_position
 
 
 def parse_xml(relative_path, failures):
@@ -72,6 +83,7 @@ def main():
         "NoteTakerUITests/NoteTakerUITests.swift",
         "docs/readme-overview.svg",
         "docs/plans/2026-06-08-note-taker-baseline.md",
+        "docs/plans/2026-06-08-note-file-protection.md",
         "img/app.gif",
     ]
 
@@ -105,7 +117,8 @@ def main():
     security = read("SECURITY.md")
     changes = read("CHANGES.md")
     gitignore = read(".gitignore")
-    plan = PLAN.read_text(encoding="utf-8") if PLAN.exists() else ""
+    baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
+    file_protection_plan = FILE_PROTECTION_PLAN.read_text(encoding="utf-8") if FILE_PROTECTION_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -141,8 +154,21 @@ def main():
     require("guard let firstPath = paths.first" in store and "NoteStore.plist" in store,
             "archiveFilePath must guard missing Documents paths and use the local note archive",
             failures)
-    require("_ = NSKeyedArchiver.archiveRootObject(notes, toFile: archiveFilePath())" in store,
-            "save must call NSKeyedArchiver without ignoring analyzer-visible return handling",
+    require_order(
+        store,
+        [
+            "let path = archiveFilePath()",
+            "let archived = NSKeyedArchiver.archiveRootObject(notes, toFile: path)",
+            "if archived",
+            "applyFileProtection(path)",
+        ],
+        "save must apply file protection only after a successful archive write",
+        failures,
+    )
+    require("func applyFileProtection(path:String)" in store and
+            "NSFileProtectionKey: NSFileProtectionComplete" in store and
+            "setAttributes" in store,
+            "NoteStore must apply complete file protection to local note archives",
             failures)
     require("as? [Note]" in store and "notes = [Note]()" in store,
             "load must fall back to an empty note list for invalid archives",
@@ -188,8 +214,8 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower(),
-            "README must document static verification and local note persistence",
+    require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and "file protection" in readme.lower(),
+            "README must document static verification, local note persistence, and file protection",
             failures)
     require("scripts/check-baseline.py" in vision and "local-first" in vision.lower(),
             "VISION must describe the current static local-first baseline",
@@ -197,11 +223,11 @@ def main():
     require("note content" in security.lower() and "make check" in security and "local" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
-    require("persist" in changes.lower() and "archive" in changes.lower() and "make check" in changes,
-            "CHANGES must record persistence hardening and baseline",
+    require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and "make check" in changes,
+            "CHANGES must record persistence hardening, file protection, and baseline",
             failures)
-    require("status: completed" in plan,
-            "plan must be marked completed",
+    require("status: completed" in baseline_plan and "status: completed" in file_protection_plan,
+            "plans must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

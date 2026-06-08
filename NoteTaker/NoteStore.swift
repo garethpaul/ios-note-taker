@@ -86,7 +86,20 @@ class NoteStore {
 
     // 2: Do the save to disk.....
     func save() {
-        _ = NSKeyedArchiver.archiveRootObject(notes, toFile: archiveFilePath())
+        let path = archiveFilePath()
+        let archived = NSKeyedArchiver.archiveRootObject(notes, toFile: path)
+        if archived {
+            applyFileProtection(path)
+        }
+    }
+
+    func applyFileProtection(path:String) {
+        do {
+            let attributes: [String: AnyObject] = [NSFileProtectionKey: NSFileProtectionComplete]
+            try NSFileManager.defaultManager().setAttributes(attributes, ofItemAtPath: path)
+        } catch {
+            // Keep local note saves available when protection attributes cannot be set.
+        }
     }
 
 
