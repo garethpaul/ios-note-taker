@@ -1,5 +1,8 @@
 ## iOS Note Taker Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 iOS Note Taker is a simple Swift note-taking app with list, detail, and note
 storage behavior.
 
