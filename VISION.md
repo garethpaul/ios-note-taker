@@ -38,7 +38,6 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-
 Notes can contain sensitive personal information. The app should remain local by
 default, avoid logging note content, and make any sync or export behavior
 explicit.
