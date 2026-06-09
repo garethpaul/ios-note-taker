@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added local `make lint`, `make test`, and `make build` gate aliases for the
+  static note persistence baseline.
 - Added delete result handling so invalid note deletes leave the store and table
   view unchanged.
 

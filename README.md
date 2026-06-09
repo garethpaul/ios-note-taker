@@ -43,6 +43,9 @@ Additional scan context:
 ```bash
 git clone https://github.com/garethpaul/ios-note-taker.git
 cd ios-note-taker
+make lint
+make test
+make build
 make check
 ```
 
@@ -63,8 +66,15 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 Run the local static baseline:
 
 ```bash
+make lint
+make test
+make build
 make check
 ```
+
+The `lint`, `test`, and `build` targets intentionally alias the static baseline
+on hosts without the legacy Xcode toolchain, so the standard local gate commands
+stay available while preserving the single source of truth.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies title normalization tests, decoded title fallback behavior, guarded note lookup, delete result handling, local note persistence hardening, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
@@ -90,7 +100,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-09-decoded-title-normalization.md` for the decoded title normalization guardrail.
 - See `docs/plans/2026-06-09-note-lookup-index-guard.md` for the note lookup guardrail.
 - See `docs/plans/2026-06-09-note-delete-result-guard.md` for the note delete result guardrail.
-- Run `make check` before pushing changes to Swift sources, plist/storyboard/scheme files, persistence behavior, build scripts, or privacy documentation.
+- See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
+- Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plist/storyboard/scheme files, persistence behavior, build scripts, or privacy documentation.
 
 ## Contributing
 

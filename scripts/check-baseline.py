@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-note-taker-baseline.md"
+MAKE_GATES_PLAN = ROOT / "docs/plans/2026-06-09-make-gate-aliases.md"
 FILE_PROTECTION_PLAN = ROOT / "docs/plans/2026-06-08-note-file-protection.md"
 ARCHIVE_PATH_PLAN = ROOT / "docs/plans/2026-06-08-note-archive-path-guard.md"
 TITLE_NORMALIZATION_PLAN = ROOT / "docs/plans/2026-06-08-note-title-normalization.md"
@@ -88,6 +89,7 @@ def main():
         "NoteTakerUITests/NoteTakerUITests.swift",
         "docs/readme-overview.svg",
         "docs/plans/2026-06-08-note-taker-baseline.md",
+        "docs/plans/2026-06-09-make-gate-aliases.md",
         "docs/plans/2026-06-08-note-file-protection.md",
         "docs/plans/2026-06-08-note-archive-path-guard.md",
         "docs/plans/2026-06-08-note-title-normalization.md",
@@ -128,7 +130,9 @@ def main():
     security = read("SECURITY.md")
     changes = read("CHANGES.md")
     gitignore = read(".gitignore")
+    makefile = read("Makefile")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
+    make_gates_plan = MAKE_GATES_PLAN.read_text(encoding="utf-8") if MAKE_GATES_PLAN.exists() else ""
     file_protection_plan = FILE_PROTECTION_PLAN.read_text(encoding="utf-8") if FILE_PROTECTION_PLAN.exists() else ""
     archive_path_plan = ARCHIVE_PATH_PLAN.read_text(encoding="utf-8") if ARCHIVE_PATH_PLAN.exists() else ""
     title_normalization_plan = TITLE_NORMALIZATION_PLAN.read_text(encoding="utf-8") if TITLE_NORMALIZATION_PLAN.exists() else ""
@@ -278,13 +282,16 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
+    require(".PHONY: build check lint test" in makefile and "lint test build: check" in makefile,
+            "Makefile must expose lint, test, and build aliases for the local baseline",
+            failures)
+    require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and
             "title normalization" in readme.lower() and "decoded title" in readme.lower() and
             "note lookup" in readme.lower() and "delete result" in readme.lower(),
             "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
-    require("scripts/check-baseline.py" in vision and "local-first" in vision.lower() and
+    require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-first" in vision.lower() and
             "documents path" in vision.lower() and "title normalization" in vision.lower() and
             "decoded title" in vision.lower() and "note lookup" in vision.lower() and "delete result" in vision.lower(),
             "VISION must describe the current static local-first baseline",
@@ -295,7 +302,7 @@ def main():
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
-            "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and "make check" in changes,
+            "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record persistence hardening, title normalization, path guarding, file protection, and baseline",
             failures)
     require("note lookup" in changes.lower(),
@@ -307,6 +314,9 @@ def main():
     require("status: completed" in baseline_plan and "status: completed" in file_protection_plan and
             "status: completed" in archive_path_plan and "status: completed" in title_normalization_plan,
             "plans must be marked completed",
+            failures)
+    require("status: completed" in make_gates_plan,
+            "make gate aliases plan must be marked completed",
             failures)
     require("status: completed" in decoded_title_plan,
             "decoded title normalization plan must be marked completed",
