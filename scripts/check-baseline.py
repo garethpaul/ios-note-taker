@@ -14,6 +14,7 @@ ARCHIVE_PATH_PLAN = ROOT / "docs/plans/2026-06-08-note-archive-path-guard.md"
 TITLE_NORMALIZATION_PLAN = ROOT / "docs/plans/2026-06-08-note-title-normalization.md"
 DECODED_TITLE_PLAN = ROOT / "docs/plans/2026-06-09-decoded-title-normalization.md"
 NOTE_LOOKUP_PLAN = ROOT / "docs/plans/2026-06-09-note-lookup-index-guard.md"
+DELETE_RESULT_PLAN = ROOT / "docs/plans/2026-06-09-note-delete-result-guard.md"
 
 
 def require(condition, message, failures):
@@ -92,6 +93,7 @@ def main():
         "docs/plans/2026-06-08-note-title-normalization.md",
         "docs/plans/2026-06-09-decoded-title-normalization.md",
         "docs/plans/2026-06-09-note-lookup-index-guard.md",
+        "docs/plans/2026-06-09-note-delete-result-guard.md",
         "img/app.gif",
     ]
 
@@ -132,6 +134,7 @@ def main():
     title_normalization_plan = TITLE_NORMALIZATION_PLAN.read_text(encoding="utf-8") if TITLE_NORMALIZATION_PLAN.exists() else ""
     decoded_title_plan = DECODED_TITLE_PLAN.read_text(encoding="utf-8") if DECODED_TITLE_PLAN.exists() else ""
     note_lookup_plan = NOTE_LOOKUP_PLAN.read_text(encoding="utf-8") if NOTE_LOOKUP_PLAN.exists() else ""
+    delete_result_plan = DELETE_RESULT_PLAN.read_text(encoding="utf-8") if DELETE_RESULT_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -170,8 +173,11 @@ def main():
     require(update_note is not None and "save()" in update_note.group(0),
             "updateNote must persist edited note content",
             failures)
-    require("if index < 0 || index >= notes.count" in store and "notes.removeAtIndex(index)\n        save()" in store,
-            "deleteNote(index:) must guard invalid indexes and save deletes",
+    require("func deleteNote(index:Int) -> Bool" in store and
+            "if index < 0 || index >= notes.count" in store and
+            "return false" in store and
+            "notes.removeAtIndex(index)\n        save()\n        return true" in store,
+            "deleteNote(index:) must report success only after guarded delete saves",
             failures)
     require("func archiveFilePath() -> String?" in store and
             "guard let firstPath = paths.first else {\n            return nil\n        }" in store and
@@ -224,11 +230,16 @@ def main():
             "testNoteTitleNormalizationDefaultsBlankTitles" in unit_tests and
             "testDecodedBlankTitleUsesVisibleFallback" in unit_tests and
             "testNoteStoreGetNoteRejectsInvalidIndexes" in unit_tests and
+            "testNoteStoreDeleteNoteRejectsInvalidIndexes" in unit_tests and
             "XCTAssert(true" not in unit_tests and "testPerformanceExample" not in unit_tests,
             "NoteTakerTests must replace template tests with note-title normalization assertions",
             failures)
     require("as? DetailViewController" in table and "as? DetailTableViewCell" in table and "as? DetailTableViewCell" in table,
             "TableViewController must guard storyboard casts",
+            failures)
+    require("if NoteStore.sharedNoteStore.deleteNote(indexPath.row)" in table and
+            "tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)" in table,
+            "TableViewController must delete visible rows only after store deletion succeeds",
             failures)
     require("guard let theNote = NoteStore.sharedNoteStore.getNote(rowNumber) else" in table and
             "return cell" in table,
@@ -270,17 +281,17 @@ def main():
     require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and
             "title normalization" in readme.lower() and "decoded title" in readme.lower() and
-            "note lookup" in readme.lower(),
+            "note lookup" in readme.lower() and "delete result" in readme.lower(),
             "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
     require("scripts/check-baseline.py" in vision and "local-first" in vision.lower() and
             "documents path" in vision.lower() and "title normalization" in vision.lower() and
-            "decoded title" in vision.lower() and "note lookup" in vision.lower(),
+            "decoded title" in vision.lower() and "note lookup" in vision.lower() and "delete result" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
     require("note content" in security.lower() and "make check" in security and
             "local" in security.lower() and "title normalization" in security.lower() and
-            "decoded title" in security.lower() and "note lookup" in security.lower(),
+            "decoded title" in security.lower() and "note lookup" in security.lower() and "delete result" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
@@ -289,6 +300,9 @@ def main():
             failures)
     require("note lookup" in changes.lower(),
             "CHANGES must record guarded note lookup updates",
+            failures)
+    require("delete result" in changes.lower(),
+            "CHANGES must record guarded delete result updates",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in file_protection_plan and
             "status: completed" in archive_path_plan and "status: completed" in title_normalization_plan,
@@ -299,6 +313,9 @@ def main():
             failures)
     require("status: completed" in note_lookup_plan,
             "note lookup index guard plan must be marked completed",
+            failures)
+    require("status: completed" in delete_result_plan,
+            "note delete result guard plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

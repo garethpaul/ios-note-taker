@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-09
+
+- Added delete result handling so invalid note deletes leave the store and table
+  view unchanged.
+
 ## 2026-06-08
 
 - Saved notes after create, edit, and delete operations so local note changes persist.

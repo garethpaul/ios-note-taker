@@ -112,9 +112,10 @@ class TableViewController: UITableViewController {
 
         if editingStyle == .Delete {
             // Delete the row from the data source
-            NoteStore.sharedNoteStore.deleteNote(indexPath.row)
-            // Delete the note from the tableview
-            tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)
+            if NoteStore.sharedNoteStore.deleteNote(indexPath.row) {
+                // Delete the note from the tableview
+                tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)
+            }
         }
     }
 

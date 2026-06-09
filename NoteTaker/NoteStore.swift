@@ -48,12 +48,13 @@ class NoteStore {
     }
 
     // Delete
-    func deleteNote(index:Int) {
+    func deleteNote(index:Int) -> Bool {
         if index < 0 || index >= notes.count {
-            return
+            return false
         }
         notes.removeAtIndex(index)
         save()
+        return true
     }
 
     func deleteNote(withNote:Note) {

@@ -42,4 +42,13 @@ class NoteTakerTests: XCTestCase {
         XCTAssertNil(store.getNote(store.count()), "Out-of-range note indexes should be ignored")
     }
 
+    func testNoteStoreDeleteNoteRejectsInvalidIndexes() {
+        let store = NoteStore.sharedNoteStore
+        let startingCount = store.count()
+
+        XCTAssertFalse(store.deleteNote(-1), "Negative note indexes should not delete notes")
+        XCTAssertFalse(store.deleteNote(store.count()), "Out-of-range note indexes should not delete notes")
+        XCTAssertEqual(store.count(), startingCount, "Invalid note deletes should leave the local note list unchanged")
+    }
+
 }
