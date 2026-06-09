@@ -33,7 +33,11 @@ class NoteStore {
 
     // Read
 
-    func getNote(index:Int) -> Note {
+    func getNote(index:Int) -> Note? {
+        if index < 0 || index >= notes.count {
+            return nil
+        }
+
         return notes[index]
     }
 

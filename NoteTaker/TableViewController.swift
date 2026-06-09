@@ -96,7 +96,9 @@ class TableViewController: UITableViewController {
 
         // Fetch the note
         let rowNumber = indexPath.row
-        let theNote = NoteStore.sharedNoteStore.getNote(rowNumber)
+        guard let theNote = NoteStore.sharedNoteStore.getNote(rowNumber) else {
+            return cell
+        }
 
         // Configure the cell
         cell.setupCell(theNote)

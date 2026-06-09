@@ -54,6 +54,7 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - Run `./build.sh` when the required platform toolchain is installed. Set
   `SIMULATOR_NAME` to override the legacy default simulator.
 - Note title normalization trims titles and falls back to `Untitled` through a model helper covered by focused unit assertions. Decoded title values use the same fallback for archived blank titles.
+- Note lookup rejects invalid table indexes before configuring visible cells.
 - Notes are local app data stored through `NoteStore.plist` in the app documents area with platform file protection applied after successful saves. If the documents path is unavailable, the store keeps an empty in-memory list instead of writing to a fallback path. The app does not sync, upload, or analyze note content.
 
 ## Testing and Verification
@@ -64,7 +65,7 @@ Run the local static baseline:
 make check
 ```
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies title normalization tests, decoded title fallback behavior, local note persistence hardening, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
+The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies title normalization tests, decoded title fallback behavior, guarded note lookup, local note persistence hardening, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
 For full legacy verification on macOS, run `./build.sh`, Xcode's test action, or `xcodebuild test` with the appropriate scheme and destination.
 
@@ -86,6 +87,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-09-decoded-title-normalization.md` for the decoded title normalization guardrail.
+- See `docs/plans/2026-06-09-note-lookup-index-guard.md` for the note lookup guardrail.
 - Run `make check` before pushing changes to Swift sources, plist/storyboard/scheme files, persistence behavior, build scripts, or privacy documentation.
 
 ## Contributing

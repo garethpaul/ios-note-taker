@@ -35,4 +35,11 @@ class NoteTakerTests: XCTestCase {
         XCTAssertEqual(note!.title, "Untitled", "Archived blank note titles should use the visible fallback")
     }
 
+    func testNoteStoreGetNoteRejectsInvalidIndexes() {
+        let store = NoteStore.sharedNoteStore
+
+        XCTAssertNil(store.getNote(-1), "Negative note indexes should be ignored")
+        XCTAssertNil(store.getNote(store.count()), "Out-of-range note indexes should be ignored")
+    }
+
 }

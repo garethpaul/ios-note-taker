@@ -13,6 +13,7 @@ FILE_PROTECTION_PLAN = ROOT / "docs/plans/2026-06-08-note-file-protection.md"
 ARCHIVE_PATH_PLAN = ROOT / "docs/plans/2026-06-08-note-archive-path-guard.md"
 TITLE_NORMALIZATION_PLAN = ROOT / "docs/plans/2026-06-08-note-title-normalization.md"
 DECODED_TITLE_PLAN = ROOT / "docs/plans/2026-06-09-decoded-title-normalization.md"
+NOTE_LOOKUP_PLAN = ROOT / "docs/plans/2026-06-09-note-lookup-index-guard.md"
 
 
 def require(condition, message, failures):
@@ -90,6 +91,7 @@ def main():
         "docs/plans/2026-06-08-note-archive-path-guard.md",
         "docs/plans/2026-06-08-note-title-normalization.md",
         "docs/plans/2026-06-09-decoded-title-normalization.md",
+        "docs/plans/2026-06-09-note-lookup-index-guard.md",
         "img/app.gif",
     ]
 
@@ -129,6 +131,7 @@ def main():
     archive_path_plan = ARCHIVE_PATH_PLAN.read_text(encoding="utf-8") if ARCHIVE_PATH_PLAN.exists() else ""
     title_normalization_plan = TITLE_NORMALIZATION_PLAN.read_text(encoding="utf-8") if TITLE_NORMALIZATION_PLAN.exists() else ""
     decoded_title_plan = DECODED_TITLE_PLAN.read_text(encoding="utf-8") if DECODED_TITLE_PLAN.exists() else ""
+    note_lookup_plan = NOTE_LOOKUP_PLAN.read_text(encoding="utf-8") if NOTE_LOOKUP_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -192,6 +195,13 @@ def main():
             "setAttributes" in store,
             "NoteStore must apply complete file protection to local note archives",
             failures)
+    get_note = re.search(r"func getNote[\s\S]+?\n    }", store)
+    require(get_note is not None and
+            "func getNote(index:Int) -> Note?" in get_note.group(0) and
+            "if index < 0 || index >= notes.count" in get_note.group(0) and
+            "return nil" in get_note.group(0),
+            "getNote(index:) must reject invalid note indexes instead of indexing directly",
+            failures)
     require("as? [Note]" in store and "notes = [Note]()" in store,
             "load must fall back to an empty note list for invalid archives",
             failures)
@@ -213,11 +223,16 @@ def main():
     require("testNoteTitleNormalizationTrimsWhitespace" in unit_tests and "XCTAssertEqual" in unit_tests and
             "testNoteTitleNormalizationDefaultsBlankTitles" in unit_tests and
             "testDecodedBlankTitleUsesVisibleFallback" in unit_tests and
+            "testNoteStoreGetNoteRejectsInvalidIndexes" in unit_tests and
             "XCTAssert(true" not in unit_tests and "testPerformanceExample" not in unit_tests,
             "NoteTakerTests must replace template tests with note-title normalization assertions",
             failures)
     require("as? DetailViewController" in table and "as? DetailTableViewCell" in table and "as? DetailTableViewCell" in table,
             "TableViewController must guard storyboard casts",
+            failures)
+    require("guard let theNote = NoteStore.sharedNoteStore.getNote(rowNumber) else" in table and
+            "return cell" in table,
+            "TableViewController must use guarded note lookup before configuring cells",
             failures)
     require("return UITableViewCell()" in table,
             "TableViewController must return a fallback cell for unexpected storyboard wiring",
@@ -254,20 +269,26 @@ def main():
             failures)
     require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and
-            "title normalization" in readme.lower() and "decoded title" in readme.lower(),
+            "title normalization" in readme.lower() and "decoded title" in readme.lower() and
+            "note lookup" in readme.lower(),
             "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
     require("scripts/check-baseline.py" in vision and "local-first" in vision.lower() and
-            "documents path" in vision.lower() and "title normalization" in vision.lower() and "decoded title" in vision.lower(),
+            "documents path" in vision.lower() and "title normalization" in vision.lower() and
+            "decoded title" in vision.lower() and "note lookup" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
     require("note content" in security.lower() and "make check" in security and
-            "local" in security.lower() and "title normalization" in security.lower() and "decoded title" in security.lower(),
+            "local" in security.lower() and "title normalization" in security.lower() and
+            "decoded title" in security.lower() and "note lookup" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
             "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and "make check" in changes,
             "CHANGES must record persistence hardening, title normalization, path guarding, file protection, and baseline",
+            failures)
+    require("note lookup" in changes.lower(),
+            "CHANGES must record guarded note lookup updates",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in file_protection_plan and
             "status: completed" in archive_path_plan and "status: completed" in title_normalization_plan,
@@ -275,6 +296,9 @@ def main():
             failures)
     require("status: completed" in decoded_title_plan,
             "decoded title normalization plan must be marked completed",
+            failures)
+    require("status: completed" in note_lookup_plan,
+            "note lookup index guard plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):
