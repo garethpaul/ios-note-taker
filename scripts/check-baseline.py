@@ -16,6 +16,7 @@ TITLE_NORMALIZATION_PLAN = ROOT / "docs/plans/2026-06-08-note-title-normalizatio
 DECODED_TITLE_PLAN = ROOT / "docs/plans/2026-06-09-decoded-title-normalization.md"
 NOTE_LOOKUP_PLAN = ROOT / "docs/plans/2026-06-09-note-lookup-index-guard.md"
 DELETE_RESULT_PLAN = ROOT / "docs/plans/2026-06-09-note-delete-result-guard.md"
+NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
 
 
 def require(condition, message, failures):
@@ -96,6 +97,7 @@ def main():
         "docs/plans/2026-06-09-decoded-title-normalization.md",
         "docs/plans/2026-06-09-note-lookup-index-guard.md",
         "docs/plans/2026-06-09-note-delete-result-guard.md",
+        "docs/plans/2026-06-09-navigation-logo-title-view.md",
         "img/app.gif",
     ]
 
@@ -139,6 +141,7 @@ def main():
     decoded_title_plan = DECODED_TITLE_PLAN.read_text(encoding="utf-8") if DECODED_TITLE_PLAN.exists() else ""
     note_lookup_plan = NOTE_LOOKUP_PLAN.read_text(encoding="utf-8") if NOTE_LOOKUP_PLAN.exists() else ""
     delete_result_plan = DELETE_RESULT_PLAN.read_text(encoding="utf-8") if DELETE_RESULT_PLAN.exists() else ""
+    nav_logo_plan = NAV_LOGO_PLAN.read_text(encoding="utf-8") if NAV_LOGO_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -165,6 +168,16 @@ def main():
             "as? NSDate ?? NSDate()" in note,
             "Note decoding must tolerate missing or incompatible archived fields",
             failures)
+    for controller_name, controller_source in {
+        "TableViewController": table,
+        "DetailViewController": detail,
+    }.items():
+        require("self.navigationItem.titleView = logoView" in controller_source and
+                "navigationController?.view.addSubview(logoView)" not in controller_source and
+                "bringSubviewToFront(logoView)" not in controller_source and
+                "logoView.frame.origin" not in controller_source,
+                f"{controller_name} must scope the mini logo to the navigation item title view",
+                failures)
     require("class func normalizedTitle(title: String?) -> String" in note and
             "stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())" in note and
             'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in note,
@@ -288,21 +301,21 @@ def main():
     require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and
             "title normalization" in readme.lower() and "decoded title" in readme.lower() and
-            "note lookup" in readme.lower() and "delete result" in readme.lower(),
+            "note lookup" in readme.lower() and "delete result" in readme.lower() and "title view" in readme.lower(),
             "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
     require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-first" in vision.lower() and
-            "documents path" in vision.lower() and "title normalization" in vision.lower() and
+            "documents path" in vision.lower() and "title normalization" in vision.lower() and "title view" in vision.lower() and
             "decoded title" in vision.lower() and "note lookup" in vision.lower() and "delete result" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
     require("note content" in security.lower() and "make check" in security and
-            "local" in security.lower() and "title normalization" in security.lower() and
+            "local" in security.lower() and "title normalization" in security.lower() and "title view" in security.lower() and
             "decoded title" in security.lower() and "note lookup" in security.lower() and "delete result" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
-            "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
+            "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and "title view" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record persistence hardening, title normalization, path guarding, file protection, and baseline",
             failures)
     require("note lookup" in changes.lower(),
@@ -326,6 +339,9 @@ def main():
             failures)
     require("status: completed" in delete_result_plan,
             "note delete result guard plan must be marked completed",
+            failures)
+    require("status: completed" in nav_logo_plan,
+            "navigation logo title-view plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

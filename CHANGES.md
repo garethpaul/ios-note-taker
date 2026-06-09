@@ -6,6 +6,8 @@
   static note persistence baseline.
 - Added delete result handling so invalid note deletes leave the store and table
   view unchanged.
+- Scoped the mini logo to each navigation item title view instead of adding
+  navigation-controller overlay subviews.
 
 ## 2026-06-08
 

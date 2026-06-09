@@ -35,15 +35,8 @@ class DetailViewController: UIViewController {
         // Setup Image
         logoView = UIImageView(frame: CGRectMake(0, 0, 30, 30))
         logoView.image = UIImage(named: "miniLogo")?.imageWithRenderingMode(.AlwaysTemplate)
-        logoView.frame.origin.x = (self.view.frame.size.width - logoView.frame.size.width) / 2
-        logoView.frame.origin.y = 25
         logoView.tintColor = toColor("#6F6664")
-
-        // Add to subview
-        self.navigationController?.view.addSubview(logoView)
-
-        // Bring the logo view to the front.
-        self.navigationController?.view.bringSubviewToFront(logoView)
+        self.navigationItem.titleView = logoView
     }
 
 
