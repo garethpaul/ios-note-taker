@@ -21,4 +21,18 @@ class NoteTakerTests: XCTestCase {
         XCTAssertEqual(Note.normalizedTitle(nil), "Untitled", "Missing note titles should use the visible fallback")
     }
 
+    func testDecodedBlankTitleUsesVisibleFallback() {
+        let data = NSMutableData()
+        let archiver = NSKeyedArchiver(forWritingWithMutableData: data)
+        archiver.encodeObject("  \n\t  ", forKey: "title")
+        archiver.encodeObject("body", forKey: "text")
+        archiver.encodeObject(NSDate(), forKey: "date")
+        archiver.finishEncoding()
+
+        let unarchiver = NSKeyedUnarchiver(forReadingWithData: data)
+        let note = Note(coder: unarchiver)
+
+        XCTAssertEqual(note!.title, "Untitled", "Archived blank note titles should use the visible fallback")
+    }
+
 }

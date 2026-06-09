@@ -7,6 +7,7 @@
 - Guarded missing documents paths so saves skip fallback archive writes and loads start with an empty note list.
 - Guarded archived note decoding and local archive loading so corrupt or incompatible files fall back to an empty note list.
 - Trimmed blank note titles to `Untitled` and avoided force-unwrapping note text fields.
+- Applied title normalization to decoded title values from archived notes.
 - Moved note title normalization into the `Note` model and added focused unit assertions for it.
 - Guarded storyboard casts in table/detail flows and rejected invalid delete indexes.
 - Rejected partial invalid hex color scans so malformed colors fall back to gray.

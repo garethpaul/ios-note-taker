@@ -51,9 +51,9 @@ explicit.
 
 Current baseline: `make check` runs `scripts/check-baseline.py` without Xcode.
 It verifies plist/storyboard/scheme metadata, local `NoteStore.plist`
-persistence, title normalization, documents path guards, archive file
-protection, archive fallback behavior, and no logging, sync, analytics, upload,
-or network behavior in app sources.
+persistence, title normalization, decoded title fallback behavior, documents
+path guards, archive file protection, archive fallback behavior, and no logging,
+sync, analytics, upload, or network behavior in app sources.
 
 ## What We Will Not Merge (For Now)
 

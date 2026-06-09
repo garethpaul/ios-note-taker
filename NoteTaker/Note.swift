@@ -35,7 +35,7 @@ class Note : NSObject, NSCoding {
 
     // 2: Decode ourselves on init
     required init?(coder aDecoder: NSCoder) {
-        self.title = aDecoder.decodeObjectForKey("title") as? String ?? ""
+        self.title = Note.normalizedTitle(aDecoder.decodeObjectForKey("title") as? String)
         self.text  = aDecoder.decodeObjectForKey("text") as? String ?? ""
         self.date   = aDecoder.decodeObjectForKey("date") as? NSDate ?? NSDate()
     }

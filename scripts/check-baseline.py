@@ -12,6 +12,7 @@ BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-note-taker-baseline.md"
 FILE_PROTECTION_PLAN = ROOT / "docs/plans/2026-06-08-note-file-protection.md"
 ARCHIVE_PATH_PLAN = ROOT / "docs/plans/2026-06-08-note-archive-path-guard.md"
 TITLE_NORMALIZATION_PLAN = ROOT / "docs/plans/2026-06-08-note-title-normalization.md"
+DECODED_TITLE_PLAN = ROOT / "docs/plans/2026-06-09-decoded-title-normalization.md"
 
 
 def require(condition, message, failures):
@@ -88,6 +89,7 @@ def main():
         "docs/plans/2026-06-08-note-file-protection.md",
         "docs/plans/2026-06-08-note-archive-path-guard.md",
         "docs/plans/2026-06-08-note-title-normalization.md",
+        "docs/plans/2026-06-09-decoded-title-normalization.md",
         "img/app.gif",
     ]
 
@@ -126,6 +128,7 @@ def main():
     file_protection_plan = FILE_PROTECTION_PLAN.read_text(encoding="utf-8") if FILE_PROTECTION_PLAN.exists() else ""
     archive_path_plan = ARCHIVE_PATH_PLAN.read_text(encoding="utf-8") if ARCHIVE_PATH_PLAN.exists() else ""
     title_normalization_plan = TITLE_NORMALIZATION_PLAN.read_text(encoding="utf-8") if TITLE_NORMALIZATION_PLAN.exists() else ""
+    decoded_title_plan = DECODED_TITLE_PLAN.read_text(encoding="utf-8") if DECODED_TITLE_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -148,7 +151,8 @@ def main():
             "Xcode project and unit tests must keep NoteTaker app code testable from XCTest",
             failures)
 
-    require('as? String ?? ""' in note and "as? NSDate ?? NSDate()" in note,
+    require("Note.normalizedTitle(aDecoder.decodeObjectForKey(\"title\") as? String)" in note and
+            "as? NSDate ?? NSDate()" in note,
             "Note decoding must tolerate missing or incompatible archived fields",
             failures)
     require("class func normalizedTitle(title: String?) -> String" in note and
@@ -208,6 +212,7 @@ def main():
             failures)
     require("testNoteTitleNormalizationTrimsWhitespace" in unit_tests and "XCTAssertEqual" in unit_tests and
             "testNoteTitleNormalizationDefaultsBlankTitles" in unit_tests and
+            "testDecodedBlankTitleUsesVisibleFallback" in unit_tests and
             "XCTAssert(true" not in unit_tests and "testPerformanceExample" not in unit_tests,
             "NoteTakerTests must replace template tests with note-title normalization assertions",
             failures)
@@ -249,24 +254,27 @@ def main():
             failures)
     require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and
-            "title normalization" in readme.lower(),
+            "title normalization" in readme.lower() and "decoded title" in readme.lower(),
             "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
     require("scripts/check-baseline.py" in vision and "local-first" in vision.lower() and
-            "documents path" in vision.lower() and "title normalization" in vision.lower(),
+            "documents path" in vision.lower() and "title normalization" in vision.lower() and "decoded title" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
     require("note content" in security.lower() and "make check" in security and
-            "local" in security.lower() and "title normalization" in security.lower(),
+            "local" in security.lower() and "title normalization" in security.lower() and "decoded title" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
-            "documents path" in changes.lower() and "title normalization" in changes.lower() and "make check" in changes,
+            "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and "make check" in changes,
             "CHANGES must record persistence hardening, title normalization, path guarding, file protection, and baseline",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in file_protection_plan and
             "status: completed" in archive_path_plan and "status: completed" in title_normalization_plan,
             "plans must be marked completed",
+            failures)
+    require("status: completed" in decoded_title_plan,
+            "decoded title normalization plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):
