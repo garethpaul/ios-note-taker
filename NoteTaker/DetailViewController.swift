@@ -49,8 +49,7 @@ class DetailViewController: UIViewController {
 
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
         // Whenever we leave the screen, update our note model
-        let trimmedTitle = (self.noteTitleLabel.text ?? "").stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-        theNote.title = trimmedTitle.isEmpty ? "Untitled" : trimmedTitle
+        theNote.title = Note.normalizedTitle(self.noteTitleLabel.text)
         theNote.text = self.noteTextView.text ?? ""
     }
 

@@ -21,6 +21,11 @@ class Note : NSObject, NSCoding {
         super.init()
     }
 
+    class func normalizedTitle(title: String?) -> String {
+        let trimmedTitle = (title ?? "").stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+        return trimmedTitle.isEmpty ? "Untitled" : trimmedTitle
+    }
+
     // 1: Encode ourselves...
     func encodeWithCoder(aCoder: NSCoder) {
         aCoder.encodeObject(title, forKey: "title")

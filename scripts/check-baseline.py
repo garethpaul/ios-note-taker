@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-note-taker-baseline.md"
 FILE_PROTECTION_PLAN = ROOT / "docs/plans/2026-06-08-note-file-protection.md"
 ARCHIVE_PATH_PLAN = ROOT / "docs/plans/2026-06-08-note-archive-path-guard.md"
+TITLE_NORMALIZATION_PLAN = ROOT / "docs/plans/2026-06-08-note-title-normalization.md"
 
 
 def require(condition, message, failures):
@@ -86,6 +87,7 @@ def main():
         "docs/plans/2026-06-08-note-taker-baseline.md",
         "docs/plans/2026-06-08-note-file-protection.md",
         "docs/plans/2026-06-08-note-archive-path-guard.md",
+        "docs/plans/2026-06-08-note-title-normalization.md",
         "img/app.gif",
     ]
 
@@ -111,6 +113,7 @@ def main():
     store = read("NoteTaker/NoteStore.swift")
     detail = read("NoteTaker/DetailViewController.swift")
     table = read("NoteTaker/TableViewController.swift")
+    unit_tests = read("NoteTakerTests/NoteTakerTests.swift")
     hex_source = read("NoteTaker/Hex.swift")
     app_sources = "\n".join(strip_swift_line_comments(path.read_text(encoding="utf-8", errors="replace"))
                             for path in sorted((ROOT / "NoteTaker").glob("*.swift")))
@@ -122,6 +125,7 @@ def main():
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     file_protection_plan = FILE_PROTECTION_PLAN.read_text(encoding="utf-8") if FILE_PROTECTION_PLAN.exists() else ""
     archive_path_plan = ARCHIVE_PATH_PLAN.read_text(encoding="utf-8") if ARCHIVE_PATH_PLAN.exists() else ""
+    title_normalization_plan = TITLE_NORMALIZATION_PLAN.read_text(encoding="utf-8") if TITLE_NORMALIZATION_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -140,9 +144,17 @@ def main():
     require("IPHONEOS_DEPLOYMENT_TARGET = 8.3;" in project and "IPHONEOS_DEPLOYMENT_TARGET = 9.3;" in project,
             "Xcode project must preserve legacy app/test deployment targets",
             failures)
+    require("ENABLE_TESTABILITY = YES;" in project and "@testable import NoteTaker" in unit_tests,
+            "Xcode project and unit tests must keep NoteTaker app code testable from XCTest",
+            failures)
 
     require('as? String ?? ""' in note and "as? NSDate ?? NSDate()" in note,
             "Note decoding must tolerate missing or incompatible archived fields",
+            failures)
+    require("class func normalizedTitle(title: String?) -> String" in note and
+            "stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())" in note and
+            'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in note,
+            "Note must expose shared title normalization for blank note titles",
             failures)
     require("notes.append(theNote)\n        save()" in store,
             "createNote must save after appending a note",
@@ -190,10 +202,14 @@ def main():
         "load must fall back to an empty note list when the Documents path is unavailable",
         failures,
     )
-    require("stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())" in detail and
-            'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in detail and
+    require("Note.normalizedTitle(self.noteTitleLabel.text)" in detail and
             'self.noteTextView.text ?? ""' in detail,
-            "DetailViewController must trim blank titles and avoid force-unwrapping note fields",
+            "DetailViewController must use shared title normalization and avoid force-unwrapping note fields",
+            failures)
+    require("testNoteTitleNormalizationTrimsWhitespace" in unit_tests and "XCTAssertEqual" in unit_tests and
+            "testNoteTitleNormalizationDefaultsBlankTitles" in unit_tests and
+            "XCTAssert(true" not in unit_tests and "testPerformanceExample" not in unit_tests,
+            "NoteTakerTests must replace template tests with note-title normalization assertions",
             failures)
     require("as? DetailViewController" in table and "as? DetailTableViewCell" in table and "as? DetailTableViewCell" in table,
             "TableViewController must guard storyboard casts",
@@ -232,21 +248,24 @@ def main():
             ".gitignore must exclude local config and Xcode build products",
             failures)
     require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
-            "file protection" in readme.lower() and "documents path" in readme.lower(),
-            "README must document static verification, local note persistence, path guards, and file protection",
+            "file protection" in readme.lower() and "documents path" in readme.lower() and
+            "title normalization" in readme.lower(),
+            "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
-    require("scripts/check-baseline.py" in vision and "local-first" in vision.lower() and "documents path" in vision.lower(),
+    require("scripts/check-baseline.py" in vision and "local-first" in vision.lower() and
+            "documents path" in vision.lower() and "title normalization" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
-    require("note content" in security.lower() and "make check" in security and "local" in security.lower(),
+    require("note content" in security.lower() and "make check" in security and
+            "local" in security.lower() and "title normalization" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
-            "documents path" in changes.lower() and "make check" in changes,
-            "CHANGES must record persistence hardening, path guarding, file protection, and baseline",
+            "documents path" in changes.lower() and "title normalization" in changes.lower() and "make check" in changes,
+            "CHANGES must record persistence hardening, title normalization, path guarding, file protection, and baseline",
             failures)
     require("status: completed" in baseline_plan and "status: completed" in file_protection_plan and
-            "status: completed" in archive_path_plan,
+            "status: completed" in archive_path_plan and "status: completed" in title_normalization_plan,
             "plans must be marked completed",
             failures)
 
