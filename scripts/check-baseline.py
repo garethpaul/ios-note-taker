@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PLAN = ROOT / "docs/plans/2026-06-08-note-taker-baseline.md"
 FILE_PROTECTION_PLAN = ROOT / "docs/plans/2026-06-08-note-file-protection.md"
+ARCHIVE_PATH_PLAN = ROOT / "docs/plans/2026-06-08-note-archive-path-guard.md"
 
 
 def require(condition, message, failures):
@@ -84,6 +85,7 @@ def main():
         "docs/readme-overview.svg",
         "docs/plans/2026-06-08-note-taker-baseline.md",
         "docs/plans/2026-06-08-note-file-protection.md",
+        "docs/plans/2026-06-08-note-archive-path-guard.md",
         "img/app.gif",
     ]
 
@@ -119,6 +121,7 @@ def main():
     gitignore = read(".gitignore")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
     file_protection_plan = FILE_PROTECTION_PLAN.read_text(encoding="utf-8") if FILE_PROTECTION_PLAN.exists() else ""
+    archive_path_plan = ARCHIVE_PATH_PLAN.read_text(encoding="utf-8") if ARCHIVE_PATH_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -151,13 +154,16 @@ def main():
     require("if index < 0 || index >= notes.count" in store and "notes.removeAtIndex(index)\n        save()" in store,
             "deleteNote(index:) must guard invalid indexes and save deletes",
             failures)
-    require("guard let firstPath = paths.first" in store and "NoteStore.plist" in store,
-            "archiveFilePath must guard missing Documents paths and use the local note archive",
+    require("func archiveFilePath() -> String?" in store and
+            "guard let firstPath = paths.first else {\n            return nil\n        }" in store and
+            "NoteStore.plist" in store,
+            "archiveFilePath must return nil for missing Documents paths and use the local note archive",
             failures)
     require_order(
         store,
         [
-            "let path = archiveFilePath()",
+            "guard let path = archiveFilePath() else",
+            "return",
             "let archived = NSKeyedArchiver.archiveRootObject(notes, toFile: path)",
             "if archived",
             "applyFileProtection(path)",
@@ -173,6 +179,17 @@ def main():
     require("as? [Note]" in store and "notes = [Note]()" in store,
             "load must fall back to an empty note list for invalid archives",
             failures)
+    require_order(
+        store,
+        [
+            "guard let filePath = archiveFilePath() else",
+            "notes = [Note]()",
+            "return",
+            "let fileManager = NSFileManager.defaultManager()",
+        ],
+        "load must fall back to an empty note list when the Documents path is unavailable",
+        failures,
+    )
     require("stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())" in detail and
             'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in detail and
             'self.noteTextView.text ?? ""' in detail,
@@ -214,19 +231,22 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and "file protection" in readme.lower(),
-            "README must document static verification, local note persistence, and file protection",
+    require("make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
+            "file protection" in readme.lower() and "documents path" in readme.lower(),
+            "README must document static verification, local note persistence, path guards, and file protection",
             failures)
-    require("scripts/check-baseline.py" in vision and "local-first" in vision.lower(),
+    require("scripts/check-baseline.py" in vision and "local-first" in vision.lower() and "documents path" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
     require("note content" in security.lower() and "make check" in security and "local" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
-    require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and "make check" in changes,
-            "CHANGES must record persistence hardening, file protection, and baseline",
+    require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
+            "documents path" in changes.lower() and "make check" in changes,
+            "CHANGES must record persistence hardening, path guarding, file protection, and baseline",
             failures)
-    require("status: completed" in baseline_plan and "status: completed" in file_protection_plan,
+    require("status: completed" in baseline_plan and "status: completed" in file_protection_plan and
+            "status: completed" in archive_path_plan,
             "plans must be marked completed",
             failures)
 

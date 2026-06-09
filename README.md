@@ -53,7 +53,7 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - Open `NoteTaker.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
 - Run `./build.sh` when the required platform toolchain is installed. Set
   `SIMULATOR_NAME` to override the legacy default simulator.
-- Notes are local app data stored through `NoteStore.plist` in the app documents area with platform file protection applied after successful saves. The app does not sync, upload, or analyze note content.
+- Notes are local app data stored through `NoteStore.plist` in the app documents area with platform file protection applied after successful saves. If the documents path is unavailable, the store keeps an empty in-memory list instead of writing to a fallback path. The app does not sync, upload, or analyze note content.
 
 ## Testing and Verification
 
@@ -63,7 +63,7 @@ Run the local static baseline:
 make check
 ```
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies local note persistence hardening and archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
+The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies local note persistence hardening, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
 For full legacy verification on macOS, run `./build.sh`, Xcode's test action, or `xcodebuild test` with the appropriate scheme and destination.
 

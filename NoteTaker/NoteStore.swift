@@ -73,10 +73,10 @@ class NoteStore {
     // Mark: Persistence
 
     // 1: Find the file & directory we want to save to...
-    func archiveFilePath() -> String {
+    func archiveFilePath() -> String? {
         let paths = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)
         guard let firstPath = paths.first else {
-            return "NoteStore.plist"
+            return nil
         }
         let documentsDirectory = firstPath as NSString
         let path = documentsDirectory.stringByAppendingPathComponent("NoteStore.plist")
@@ -86,7 +86,9 @@ class NoteStore {
 
     // 2: Do the save to disk.....
     func save() {
-        let path = archiveFilePath()
+        guard let path = archiveFilePath() else {
+            return
+        }
         let archived = NSKeyedArchiver.archiveRootObject(notes, toFile: path)
         if archived {
             applyFileProtection(path)
@@ -105,7 +107,10 @@ class NoteStore {
 
     // 3: Do the reload from disk....
     func load() {
-        let filePath = archiveFilePath()
+        guard let filePath = archiveFilePath() else {
+            notes = [Note]()
+            return
+        }
         let fileManager = NSFileManager.defaultManager()
 
         if fileManager.fileExistsAtPath(filePath) {
