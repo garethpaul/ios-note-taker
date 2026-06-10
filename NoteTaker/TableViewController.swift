@@ -25,7 +25,7 @@ class TableViewController: UITableViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         // ensure we are not in edit mode
-        editing = false
+        isEditing = false
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -63,7 +63,7 @@ class TableViewController: UITableViewController {
             tableView.reloadRows(at: [indexPath], with: .automatic)
         } else {
             // Otherwise, add a new record
-            NoteStore.sharedNoteStore.createNote(noteDetail.theNote)
+            _ = NoteStore.sharedNoteStore.createNote(noteDetail.theNote)
 
             // Get an index to insert the row at
             let indexPath = IndexPath(row: NoteStore.sharedNoteStore.count() - 1, section: 0)
