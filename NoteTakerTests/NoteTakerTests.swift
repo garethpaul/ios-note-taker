@@ -51,4 +51,14 @@ class NoteTakerTests: XCTestCase {
         XCTAssertEqual(store.count(), startingCount, "Invalid note deletes should leave the local note list unchanged")
     }
 
+    func testNoteStoreDeleteNoteByReferenceReportsResults() {
+        let store = NoteStore.sharedNoteStore
+        let note = store.createNote(Note())
+        let countAfterCreate = store.count()
+
+        XCTAssertTrue(store.deleteNote(note), "Reference deletes should report success when a note is removed")
+        XCTAssertEqual(store.count(), countAfterCreate - 1, "Successful reference deletes should remove one note")
+        XCTAssertFalse(store.deleteNote(note), "Deleting the same note reference twice should report failure")
+    }
+
 }

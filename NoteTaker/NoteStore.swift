@@ -57,15 +57,17 @@ class NoteStore {
         return true
     }
 
-    func deleteNote(withNote:Note) {
+    func deleteNote(withNote:Note) -> Bool {
 
         for (i, note) in notes.enumerate() {
             if note === withNote {
                 notes.removeAtIndex(i)
                 save()
-                return
+                return true
             }
         }
+
+        return false
 
     }
 

@@ -22,6 +22,7 @@ Priority:
 - Keep note title normalization shared and covered by focused unit tests
 - Keep note lookup guarded against stale or invalid table indexes
 - Keep note delete result handling aligned between the store and table view
+- Keep reference delete result handling explicit for object-based deletes
 - Keep the mini logo scoped to each navigation item title view
 - Keep the local note archive protected after successful saves
 - Avoid fallback archive writes when the documents path is unavailable
@@ -57,10 +58,10 @@ explicit.
 Current baseline: `make lint`, `make test`, `make build`, and `make check` run
 `scripts/check-baseline.py` without Xcode. It verifies plist/storyboard/scheme
 metadata, local `NoteStore.plist` persistence, title normalization, decoded title
-fallback behavior, guarded note lookup, delete result handling, navigation logo
-title view ownership, documents path guards, archive file protection, archive
-fallback behavior, and no logging, sync, analytics, upload, or network behavior
-in app sources.
+fallback behavior, guarded note lookup, delete result handling, reference delete
+result handling, navigation logo title view ownership, documents path guards,
+archive file protection, archive fallback behavior, and no logging, sync,
+analytics, upload, or network behavior in app sources.
 
 ## What We Will Not Merge (For Now)
 

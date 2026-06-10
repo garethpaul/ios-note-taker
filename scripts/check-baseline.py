@@ -17,6 +17,7 @@ DECODED_TITLE_PLAN = ROOT / "docs/plans/2026-06-09-decoded-title-normalization.m
 NOTE_LOOKUP_PLAN = ROOT / "docs/plans/2026-06-09-note-lookup-index-guard.md"
 DELETE_RESULT_PLAN = ROOT / "docs/plans/2026-06-09-note-delete-result-guard.md"
 NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
+REFERENCE_DELETE_PLAN = ROOT / "docs/plans/2026-06-10-note-reference-delete-result.md"
 
 
 def require(condition, message, failures):
@@ -98,6 +99,7 @@ def main():
         "docs/plans/2026-06-09-note-lookup-index-guard.md",
         "docs/plans/2026-06-09-note-delete-result-guard.md",
         "docs/plans/2026-06-09-navigation-logo-title-view.md",
+        "docs/plans/2026-06-10-note-reference-delete-result.md",
         "img/app.gif",
     ]
 
@@ -142,6 +144,7 @@ def main():
     note_lookup_plan = NOTE_LOOKUP_PLAN.read_text(encoding="utf-8") if NOTE_LOOKUP_PLAN.exists() else ""
     delete_result_plan = DELETE_RESULT_PLAN.read_text(encoding="utf-8") if DELETE_RESULT_PLAN.exists() else ""
     nav_logo_plan = NAV_LOGO_PLAN.read_text(encoding="utf-8") if NAV_LOGO_PLAN.exists() else ""
+    reference_delete_plan = REFERENCE_DELETE_PLAN.read_text(encoding="utf-8") if REFERENCE_DELETE_PLAN.exists() else ""
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -196,6 +199,13 @@ def main():
             "notes.removeAtIndex(index)\n        save()\n        return true" in store,
             "deleteNote(index:) must report success only after guarded delete saves",
             failures)
+    reference_delete = re.search(r"func deleteNote\(withNote:Note\) -> Bool[\s\S]+?\n    }", store)
+    require(reference_delete is not None and
+            "if note === withNote" in reference_delete.group(0) and
+            "notes.removeAtIndex(i)\n                save()\n                return true" in reference_delete.group(0) and
+            "return false" in reference_delete.group(0),
+            "deleteNote(withNote:) must report whether reference deletion removed a note",
+            failures)
     require("func archiveFilePath() -> String?" in store and
             "guard let firstPath = paths.first else {\n            return nil\n        }" in store and
             "NoteStore.plist" in store,
@@ -248,6 +258,7 @@ def main():
             "testDecodedBlankTitleUsesVisibleFallback" in unit_tests and
             "testNoteStoreGetNoteRejectsInvalidIndexes" in unit_tests and
             "testNoteStoreDeleteNoteRejectsInvalidIndexes" in unit_tests and
+            "testNoteStoreDeleteNoteByReferenceReportsResults" in unit_tests and
             "XCTAssert(true" not in unit_tests and "testPerformanceExample" not in unit_tests,
             "NoteTakerTests must replace template tests with note-title normalization assertions",
             failures)
@@ -301,21 +312,25 @@ def main():
     require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and
             "title normalization" in readme.lower() and "decoded title" in readme.lower() and
-            "note lookup" in readme.lower() and "delete result" in readme.lower() and "title view" in readme.lower(),
+            "note lookup" in readme.lower() and "delete result" in readme.lower() and
+            "reference delete" in readme.lower() and "title view" in readme.lower(),
             "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
     require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-first" in vision.lower() and
             "documents path" in vision.lower() and "title normalization" in vision.lower() and "title view" in vision.lower() and
-            "decoded title" in vision.lower() and "note lookup" in vision.lower() and "delete result" in vision.lower(),
+            "decoded title" in vision.lower() and "note lookup" in vision.lower() and "delete result" in vision.lower() and
+            "reference delete" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
     require("note content" in security.lower() and "make check" in security and
             "local" in security.lower() and "title normalization" in security.lower() and "title view" in security.lower() and
-            "decoded title" in security.lower() and "note lookup" in security.lower() and "delete result" in security.lower(),
+            "decoded title" in security.lower() and "note lookup" in security.lower() and "delete result" in security.lower() and
+            "reference delete" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
-            "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and "title view" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
+            "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and
+            "reference delete" in changes.lower() and "title view" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record persistence hardening, title normalization, path guarding, file protection, and baseline",
             failures)
     require("note lookup" in changes.lower(),
@@ -342,6 +357,9 @@ def main():
             failures)
     require("status: completed" in nav_logo_plan,
             "navigation logo title-view plan must be marked completed",
+            failures)
+    require("status: completed" in reference_delete_plan,
+            "note reference delete result plan must be marked completed",
             failures)
 
     if shutil.which("xcodebuild"):

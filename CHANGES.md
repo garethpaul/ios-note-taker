@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-10
+
+- Added reference delete result handling so object-based note deletes report
+  whether they actually removed and saved a note.
+
 ## 2026-06-09
 
 - Added local `make lint`, `make test`, and `make build` gate aliases for the
