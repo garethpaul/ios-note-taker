@@ -21,18 +21,28 @@ class NoteTakerTests: XCTestCase {
         XCTAssertEqual(Note.normalizedTitle(nil), "Untitled", "Missing note titles should use the visible fallback")
     }
 
-    func testDecodedBlankTitleUsesVisibleFallback() {
-        let data = NSMutableData()
-        let archiver = NSKeyedArchiver(forWritingWithMutableData: data)
-        archiver.encodeObject("  \n\t  ", forKey: "title")
-        archiver.encodeObject("body", forKey: "text")
-        archiver.encodeObject(NSDate(), forKey: "date")
-        archiver.finishEncoding()
+    func testDecodedBlankTitleUsesVisibleFallback() throws {
+        let note = Note()
+        note.title = "  \n\t  "
+        note.text = "body"
 
-        let unarchiver = NSKeyedUnarchiver(forReadingWithData: data)
-        let note = Note(coder: unarchiver)
+        let data = try NSKeyedArchiver.archivedData(withRootObject: note, requiringSecureCoding: true)
+        let decodedNote = try NSKeyedUnarchiver.unarchivedObject(ofClass: Note.self, from: data)
 
-        XCTAssertEqual(note!.title, "Untitled", "Archived blank note titles should use the visible fallback")
+        XCTAssertEqual(decodedNote?.title, "Untitled", "Archived blank note titles should use the visible fallback")
+    }
+
+    func testSecureArchiveRoundTripPreservesNoteFields() throws {
+        let note = Note()
+        note.title = "Groceries"
+        note.text = "Milk"
+
+        let data = try NSKeyedArchiver.archivedData(withRootObject: note, requiringSecureCoding: true)
+        let decodedNote = try NSKeyedUnarchiver.unarchivedObject(ofClass: Note.self, from: data)
+
+        XCTAssertEqual(decodedNote?.title, "Groceries")
+        XCTAssertEqual(decodedNote?.text, "Milk")
+        XCTAssertEqual(decodedNote?.date, note.date)
     }
 
     func testNoteStoreGetNoteRejectsInvalidIndexes() {

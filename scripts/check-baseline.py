@@ -20,6 +20,7 @@ DELETE_RESULT_PLAN = ROOT / "docs/plans/2026-06-09-note-delete-result-guard.md"
 NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
 REFERENCE_DELETE_PLAN = ROOT / "docs/plans/2026-06-10-note-reference-delete-result.md"
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
+SECURE_SWIFT_5_PLAN = ROOT / "docs/plans/2026-06-10-secure-swift-5-persistence.md"
 
 
 def require(condition, message, failures):
@@ -104,6 +105,7 @@ def main():
         "docs/plans/2026-06-09-navigation-logo-title-view.md",
         "docs/plans/2026-06-10-note-reference-delete-result.md",
         "docs/plans/2026-06-10-hosted-project-validation.md",
+        "docs/plans/2026-06-10-secure-swift-5-persistence.md",
         "img/app.gif",
     ]
 
@@ -150,6 +152,7 @@ def main():
     nav_logo_plan = NAV_LOGO_PLAN.read_text(encoding="utf-8") if NAV_LOGO_PLAN.exists() else ""
     reference_delete_plan = REFERENCE_DELETE_PLAN.read_text(encoding="utf-8") if REFERENCE_DELETE_PLAN.exists() else ""
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
+    secure_swift_5_plan = SECURE_SWIFT_5_PLAN.read_text(encoding="utf-8") if SECURE_SWIFT_5_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
@@ -166,16 +169,24 @@ def main():
             'BlueprintName = "NoteTakerTests"' in test_scheme,
             "Shared Xcode schemes must remain parseable and named",
             failures)
-    require("IPHONEOS_DEPLOYMENT_TARGET = 8.3;" in project and "IPHONEOS_DEPLOYMENT_TARGET = 9.3;" in project,
-            "Xcode project must preserve legacy app/test deployment targets",
+    require(project.count("IPHONEOS_DEPLOYMENT_TARGET = 12.0;") == 4 and
+            "IPHONEOS_DEPLOYMENT_TARGET = 8.3;" not in project and
+            "IPHONEOS_DEPLOYMENT_TARGET = 9.3;" not in project and
+            project.count("SWIFT_VERSION = 5.0;") == 6,
+            "Xcode project must use Swift 5 and iOS 12 for app and test targets",
             failures)
     require("ENABLE_TESTABILITY = YES;" in project and "@testable import NoteTaker" in unit_tests,
             "Xcode project and unit tests must keep NoteTaker app code testable from XCTest",
             failures)
 
-    require("Note.normalizedTitle(aDecoder.decodeObjectForKey(\"title\") as? String)" in note and
-            "as? NSDate ?? NSDate()" in note,
+    require("class Note: NSObject, NSSecureCoding" in note and
+            "static var supportsSecureCoding: Bool { true }" in note and
+            "decodeObject(of: NSString.self" in note and
+            "decodeObject(of: NSDate.self" in note,
             "Note decoding must tolerate missing or incompatible archived fields",
+            failures)
+    require("[UIApplication.LaunchOptionsKey: Any]?" in app_sources,
+            "AppDelegate must use the Swift 5 launch-options signature",
             failures)
     for controller_name, controller_source in {
         "TableViewController": table,
@@ -187,8 +198,8 @@ def main():
                 "logoView.frame.origin" not in controller_source,
                 f"{controller_name} must scope the mini logo to the navigation item title view",
                 failures)
-    require("class func normalizedTitle(title: String?) -> String" in note and
-            "stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())" in note and
+    require("class func normalizedTitle(_ title: String?) -> String" in note and
+            "trimmingCharacters(in: .whitespacesAndNewlines)" in note and
             'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in note,
             "Note must expose shared title normalization for blank note titles",
             failures)
@@ -199,58 +210,60 @@ def main():
     require(update_note is not None and "save()" in update_note.group(0),
             "updateNote must persist edited note content",
             failures)
-    require("func deleteNote(index:Int) -> Bool" in store and
+    require("func deleteNote(_ index: Int) -> Bool" in store and
             "if index < 0 || index >= notes.count" in store and
             "return false" in store and
-            "notes.removeAtIndex(index)\n        save()\n        return true" in store,
+            "notes.remove(at: index)\n        save()\n        return true" in store,
             "deleteNote(index:) must report success only after guarded delete saves",
             failures)
-    reference_delete = re.search(r"func deleteNote\(withNote:Note\) -> Bool[\s\S]+?\n    }", store)
+    reference_delete = re.search(r"func deleteNote\(_ withNote: Note\) -> Bool[\s\S]+?\n    }", store)
     require(reference_delete is not None and
             "if note === withNote" in reference_delete.group(0) and
-            "notes.removeAtIndex(i)\n                save()\n                return true" in reference_delete.group(0) and
+            "notes.remove(at: i)\n                save()\n                return true" in reference_delete.group(0) and
             "return false" in reference_delete.group(0),
             "deleteNote(withNote:) must report whether reference deletion removed a note",
             failures)
-    require("func archiveFilePath() -> String?" in store and
-            "guard let firstPath = paths.first else {\n            return nil\n        }" in store and
+    require("func archiveFileURL() -> URL?" in store and
+            "FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)" in store and
             "NoteStore.plist" in store,
-            "archiveFilePath must return nil for missing Documents paths and use the local note archive",
+            "archiveFileURL must return nil for missing Documents paths and use the local note archive",
             failures)
     require_order(
         store,
         [
-            "guard let path = archiveFilePath() else",
+            "guard let url = archiveFileURL() else",
             "return",
-            "let archived = NSKeyedArchiver.archiveRootObject(notes, toFile: path)",
-            "if archived",
-            "applyFileProtection(path)",
+            "NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)",
+            "data.write(to: url, options: .atomic)",
+            "applyFileProtection(url.path)",
         ],
-        "save must apply file protection only after a successful archive write",
+        "save must securely archive, atomically write, and then protect note data",
         failures,
     )
-    require("func applyFileProtection(path:String)" in store and
-            "NSFileProtectionKey: NSFileProtectionComplete" in store and
+    require("func applyFileProtection(_ path: String)" in store and
+            ".protectionKey: FileProtectionType.complete" in store and
             "setAttributes" in store,
             "NoteStore must apply complete file protection to local note archives",
             failures)
     get_note = re.search(r"func getNote[\s\S]+?\n    }", store)
     require(get_note is not None and
-            "func getNote(index:Int) -> Note?" in get_note.group(0) and
+            "func getNote(_ index: Int) -> Note?" in get_note.group(0) and
             "if index < 0 || index >= notes.count" in get_note.group(0) and
             "return nil" in get_note.group(0),
             "getNote(index:) must reject invalid note indexes instead of indexing directly",
             failures)
-    require("as? [Note]" in store and "notes = [Note]()" in store,
+    require("NSKeyedUnarchiver.unarchivedObject(ofClasses: allowedClasses, from: data) as? [Note] ?? []" in store and
+            "notes = []" in store and
+            "let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]" in store,
             "load must fall back to an empty note list for invalid archives",
             failures)
     require_order(
         store,
         [
-            "guard let filePath = archiveFilePath() else",
-            "notes = [Note]()",
+            "guard let fileURL = archiveFileURL() else",
+            "notes = []",
             "return",
-            "let fileManager = NSFileManager.defaultManager()",
+            "Data(contentsOf: fileURL)",
         ],
         "load must fall back to an empty note list when the Documents path is unavailable",
         failures,
@@ -262,6 +275,8 @@ def main():
     require("testNoteTitleNormalizationTrimsWhitespace" in unit_tests and "XCTAssertEqual" in unit_tests and
             "testNoteTitleNormalizationDefaultsBlankTitles" in unit_tests and
             "testDecodedBlankTitleUsesVisibleFallback" in unit_tests and
+            "testSecureArchiveRoundTripPreservesNoteFields" in unit_tests and
+            "requiringSecureCoding: true" in unit_tests and
             "testNoteStoreGetNoteRejectsInvalidIndexes" in unit_tests and
             "testNoteStoreDeleteNoteRejectsInvalidIndexes" in unit_tests and
             "testNoteStoreDeleteNoteByReferenceReportsResults" in unit_tests and
@@ -272,7 +287,7 @@ def main():
             "TableViewController must guard storyboard casts",
             failures)
     require("if NoteStore.sharedNoteStore.deleteNote(indexPath.row)" in table and
-            "tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)" in table,
+            "tableView.deleteRows(at: [indexPath], with: .fade)" in table,
             "TableViewController must delete visible rows only after store deletion succeeds",
             failures)
     require("guard let theNote = NoteStore.sharedNoteStore.getNote(rowNumber) else" in table and
@@ -282,7 +297,7 @@ def main():
     require("return UITableViewCell()" in table,
             "TableViewController must return a fallback cell for unexpected storyboard wiring",
             failures)
-    require("let scanner = NSScanner(string: cString)" in hex_source and "scanner.atEnd" in hex_source,
+    require("let scanner = Scanner(string: cString)" in hex_source and "scanner.isAtEnd" in hex_source,
             "Hex parser must reject partial invalid scans",
             failures)
 
@@ -370,6 +385,9 @@ def main():
     require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
             "hosted project validation plan must be completed and document make check",
             failures)
+    require("status: completed" in secure_swift_5_plan and "NSSecureCoding" in secure_swift_5_plan,
+            "secure Swift 5 persistence plan must be completed and document NSSecureCoding",
+            failures)
     require("permissions:\n  contents: read" in workflow,
             "Check workflow must use read-only repository permissions",
             failures)
@@ -384,14 +402,22 @@ def main():
 
     if shutil.which("xcodebuild"):
         result = subprocess.run(
-            ["xcodebuild", "-list", "-project", "NoteTaker.xcodeproj"],
+            [
+                "xcodebuild",
+                "-project", "NoteTaker.xcodeproj",
+                "-target", "NoteTakerTests",
+                "-configuration", "Debug",
+                "-sdk", "iphonesimulator",
+                "CODE_SIGNING_ALLOWED=NO",
+                "build",
+            ],
             cwd=ROOT,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
         )
         require(result.returncode == 0,
-                "xcodebuild could not parse NoteTaker.xcodeproj and shared schemes: " + result.stderr.strip(),
+                "xcodebuild could not compile NoteTaker and its unit tests for the simulator: " + result.stdout.strip(),
                 failures)
     else:
         print("xcodebuild unavailable; static iOS baseline only.")

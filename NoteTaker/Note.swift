@@ -5,39 +5,42 @@
 import Foundation
 
 // MARK: Note model for storing the note.
-class Note : NSObject, NSCoding {
+class Note: NSObject, NSSecureCoding {
+    static var supportsSecureCoding: Bool { true }
+
     var title = ""
     var text = ""
-    var date = NSDate() // Defaults to current date / time
+    var date = Date() // Defaults to current date / time
 
     // Computed property to return date as a string
-    var shortDate : NSString {
-        let dateFormatter = NSDateFormatter()
+    var shortDate: String {
+        let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM/dd/yy"
-        return dateFormatter.stringFromDate(self.date)
+        return dateFormatter.string(from: self.date)
     }
 
     override init() {
         super.init()
     }
 
-    class func normalizedTitle(title: String?) -> String {
-        let trimmedTitle = (title ?? "").stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+    class func normalizedTitle(_ title: String?) -> String {
+        let trimmedTitle = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedTitle.isEmpty ? "Untitled" : trimmedTitle
     }
 
     // 1: Encode ourselves...
-    func encodeWithCoder(aCoder: NSCoder) {
-        aCoder.encodeObject(title, forKey: "title")
-        aCoder.encodeObject(text, forKey: "text")
-        aCoder.encodeObject(date, forKey: "date")
+    func encode(with coder: NSCoder) {
+        coder.encode(title, forKey: "title")
+        coder.encode(text, forKey: "text")
+        coder.encode(date, forKey: "date")
     }
 
     // 2: Decode ourselves on init
-    required init?(coder aDecoder: NSCoder) {
-        self.title = Note.normalizedTitle(aDecoder.decodeObjectForKey("title") as? String)
-        self.text  = aDecoder.decodeObjectForKey("text") as? String ?? ""
-        self.date   = aDecoder.decodeObjectForKey("date") as? NSDate ?? NSDate()
+    required init?(coder: NSCoder) {
+        self.title = Note.normalizedTitle(coder.decodeObject(of: NSString.self, forKey: "title") as? String)
+        self.text = coder.decodeObject(of: NSString.self, forKey: "text") as? String ?? ""
+        self.date = coder.decodeObject(of: NSDate.self, forKey: "date") as? Date ?? Date()
+        super.init()
     }
 
 }

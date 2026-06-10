@@ -5,13 +5,7 @@
 import Foundation
 
 class NoteStore {
-    // Mark: Singleton Pattern (hacked since we don't have class var's yet)
-    class var sharedNoteStore : NoteStore {
-        struct Static {
-            static let instance : NoteStore = NoteStore()
-        }
-        return Static.instance
-    }
+    static let sharedNoteStore = NoteStore()
 
     // Private init to force usage of singleton
     private init() {
@@ -19,13 +13,13 @@ class NoteStore {
     }
 
     // Array to hold our notes
-    private var notes : [Note]!
+    private var notes = [Note]()
 
     // CRUD - Create, Read, Update, Delete
 
     // Create
 
-    func createNote(theNote:Note = Note()) -> Note {
+    func createNote(_ theNote: Note = Note()) -> Note {
         notes.append(theNote)
         save()
         return theNote
@@ -33,7 +27,7 @@ class NoteStore {
 
     // Read
 
-    func getNote(index:Int) -> Note? {
+    func getNote(_ index: Int) -> Note? {
         if index < 0 || index >= notes.count {
             return nil
         }
@@ -42,26 +36,26 @@ class NoteStore {
     }
 
     // Update
-    func updateNote(theNote theNote:Note) {
+    func updateNote(theNote: Note) {
         // Notes passed by reference, no update code needed
         save()
     }
 
     // Delete
-    func deleteNote(index:Int) -> Bool {
+    func deleteNote(_ index: Int) -> Bool {
         if index < 0 || index >= notes.count {
             return false
         }
-        notes.removeAtIndex(index)
+        notes.remove(at: index)
         save()
         return true
     }
 
-    func deleteNote(withNote:Note) -> Bool {
+    func deleteNote(_ withNote: Note) -> Bool {
 
-        for (i, note) in notes.enumerate() {
+        for (i, note) in notes.enumerated() {
             if note === withNote {
-                notes.removeAtIndex(i)
+                notes.remove(at: i)
                 save()
                 return true
             }
@@ -80,32 +74,30 @@ class NoteStore {
     // Mark: Persistence
 
     // 1: Find the file & directory we want to save to...
-    func archiveFilePath() -> String? {
-        let paths = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)
-        guard let firstPath = paths.first else {
-            return nil
-        }
-        let documentsDirectory = firstPath as NSString
-        let path = documentsDirectory.stringByAppendingPathComponent("NoteStore.plist")
-
-        return path
+    func archiveFileURL() -> URL? {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("NoteStore.plist")
     }
 
     // 2: Do the save to disk.....
     func save() {
-        guard let path = archiveFilePath() else {
+        guard let url = archiveFileURL() else {
             return
         }
-        let archived = NSKeyedArchiver.archiveRootObject(notes, toFile: path)
-        if archived {
-            applyFileProtection(path)
+        do {
+            let data = try NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)
+            try data.write(to: url, options: .atomic)
+            applyFileProtection(url.path)
+        } catch {
+            // Keep the in-memory notes available when local persistence fails.
         }
     }
 
-    func applyFileProtection(path:String) {
+    func applyFileProtection(_ path: String) {
         do {
-            let attributes: [String: AnyObject] = [NSFileProtectionKey: NSFileProtectionComplete]
-            try NSFileManager.defaultManager().setAttributes(attributes, ofItemAtPath: path)
+            let attributes: [FileAttributeKey: Any] = [.protectionKey: FileProtectionType.complete]
+            try FileManager.default.setAttributes(attributes, ofItemAtPath: path)
         } catch {
             // Keep local note saves available when protection attributes cannot be set.
         }
@@ -114,20 +106,17 @@ class NoteStore {
 
     // 3: Do the reload from disk....
     func load() {
-        guard let filePath = archiveFilePath() else {
-            notes = [Note]()
+        guard let fileURL = archiveFileURL() else {
+            notes = []
             return
         }
-        let fileManager = NSFileManager.defaultManager()
 
-        if fileManager.fileExistsAtPath(filePath) {
-            if let archivedNotes = NSKeyedUnarchiver.unarchiveObjectWithFile(filePath) as? [Note] {
-                notes = archivedNotes
-            } else {
-                notes = [Note]()
-            }
-        } else {
-            notes = [Note]()
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]
+            notes = try NSKeyedUnarchiver.unarchivedObject(ofClasses: allowedClasses, from: data) as? [Note] ?? []
+        } catch {
+            notes = []
         }
     }
     

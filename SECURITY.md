@@ -27,10 +27,10 @@ Helpful reports include:
 - This repository appears to be an Apple platform application or Swift sample. The active security scope is the code and documentation on the default branch.
 - Note content is sensitive local app data. The current app stores notes locally through `NoteStore.plist`, applies platform file protection after successful saves, and should not log, sync, upload, analyze, or transmit note content.
 - Persistence, archive decoding, export, sharing, sync, analytics, or network changes should receive security-focused review before merge.
-- Run `make check` before merging changes; it verifies plist/storyboard/scheme metadata, title normalization, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, navigation logo title view ownership, local persistence hardening, archive file protection, archive fallback behavior, source inventory, and note-content privacy guardrails.
-- The pinned macOS workflow uses read-only repository permissions and parses
-  project metadata without opening note archives, reading note content, or
-  using signing material.
+- Run `make check` before merging changes; it verifies plist/storyboard/scheme metadata, secure coding, atomic archive writes, title normalization, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, navigation logo title view ownership, file protection, archive fallback behavior, source inventory, and note-content privacy guardrails.
+- The pinned macOS workflow uses read-only repository permissions and compiles
+  the unsigned app and unit-test bundle without opening user archives, reading
+  note content, or using signing material.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 
 ## Mobile Privacy Notes

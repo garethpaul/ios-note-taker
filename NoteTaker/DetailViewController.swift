@@ -33,14 +33,14 @@ class DetailViewController: UIViewController {
     // MARK: Nav Helper
     func setupNav() {
         // Setup Image
-        logoView = UIImageView(frame: CGRectMake(0, 0, 30, 30))
-        logoView.image = UIImage(named: "miniLogo")?.imageWithRenderingMode(.AlwaysTemplate)
+        logoView = UIImageView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
+        logoView.image = UIImage(named: "miniLogo")?.withRenderingMode(.alwaysTemplate)
         logoView.tintColor = toColor("#6F6664")
         self.navigationItem.titleView = logoView
     }
 
 
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         // Whenever we leave the screen, update our note model
         theNote.title = Note.normalizedTitle(self.noteTitleLabel.text)
         theNote.text = self.noteTextView.text ?? ""

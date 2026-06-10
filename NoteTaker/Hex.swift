@@ -7,21 +7,21 @@ import UIKit
 
 // Concerts a hex string into a UIColor
 //
-func toColor (hex:String) -> UIColor {
-    var cString:String = hex.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet() as NSCharacterSet).uppercaseString
+func toColor(_ hex: String) -> UIColor {
+    var cString = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
-    if (cString.hasPrefix("#")) {
-        cString = cString.substringFromIndex(cString.startIndex.advancedBy(1))
+    if cString.hasPrefix("#") {
+        cString.removeFirst()
     }
 
-    if (cString.characters.count != 6) {
-        return UIColor.grayColor()
+    if cString.count != 6 {
+        return .gray
     }
 
-    var rgbValue:UInt32 = 0
-    let scanner = NSScanner(string: cString)
-    if (!scanner.scanHexInt(&rgbValue) || !scanner.atEnd) {
-        return UIColor.grayColor()
+    var rgbValue: UInt64 = 0
+    let scanner = Scanner(string: cString)
+    if !scanner.scanHexInt64(&rgbValue) || !scanner.isAtEnd {
+        return .gray
     }
 
     return UIColor(

@@ -75,18 +75,19 @@ make build
 make check
 ```
 
-The `lint`, `test`, and `build` targets intentionally alias the static baseline
-on hosts without the legacy Xcode toolchain, so the standard local gate commands
+The `lint`, `test`, and `build` targets intentionally alias the canonical baseline
+on hosts without Xcode, so the standard local gate commands
 stay available while preserving the single source of truth.
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies title normalization tests, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, navigation logo title view ownership, local note persistence hardening, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
+The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Swift 5 project metadata, verifies secure-coding round trips, title normalization tests, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, navigation logo title view ownership, atomic local note persistence, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
 The pinned GitHub Actions check runs `make check` on `macos-15`. When Xcode is
-available, the baseline also runs `xcodebuild -list` against `NoteTaker.xcodeproj`
-to verify the project and shared schemes parse. It does not open note archives,
-run simulator builds, or access local note content.
+available, the baseline also compiles the unsigned Swift 5 app and unit-test
+bundle for the iOS Simulator. It does not launch the app, open user note
+archives, read note content, or use signing material.
 
-For full legacy verification on macOS, run `./build.sh`, Xcode's test action, or `xcodebuild test` with the appropriate scheme and destination.
+For runtime verification on macOS, use the shared Xcode schemes to run the unit
+tests and exercise create, edit, delete, and relaunch persistence flows.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

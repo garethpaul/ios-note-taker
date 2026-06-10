@@ -12,27 +12,27 @@ class TableViewController: UITableViewController {
         super.viewDidLoad()
         self.setupNav()
         // Leverage the built in TableViewController Edit button
-        self.navigationItem.leftBarButtonItem = self.editButtonItem()
+        self.navigationItem.leftBarButtonItem = self.editButtonItem
     }
 
     func setupNav() {
-        logoView = UIImageView(frame: CGRectMake(0, 0, 30, 30))
-        logoView.image = UIImage(named: "miniLogo")?.imageWithRenderingMode(.AlwaysTemplate)
+        logoView = UIImageView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
+        logoView.image = UIImage(named: "miniLogo")?.withRenderingMode(.alwaysTemplate)
         logoView.tintColor = toColor("#6F6664")
         self.navigationItem.titleView = logoView
     }
 
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         // ensure we are not in edit mode
         editing = false
     }
 
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         // Here we pass the note they tapped on between the view controllers
         if segue.identifier == "NoteDetailPush" {
             // Get the controller we are going to
-            guard let noteDetail = segue.destinationViewController as? DetailViewController else {
+            guard let noteDetail = segue.destination as? DetailViewController else {
                 return
             }
             // Lookup the data we want to pass
@@ -46,11 +46,11 @@ class TableViewController: UITableViewController {
     }
 
     // MARK: IBActions
-    @IBAction func saveFromNoteDetail(segue:UIStoryboardSegue) {
+    @IBAction func saveFromNoteDetail(_ segue: UIStoryboardSegue) {
         // We come here from an exit segue when they hit save on the detail screen
 
         // Get the controller we are coming from
-        guard let noteDetail = segue.sourceViewController as? DetailViewController else {
+        guard let noteDetail = segue.source as? DetailViewController else {
             return
         }
 
@@ -60,30 +60,30 @@ class TableViewController: UITableViewController {
             NoteStore.sharedNoteStore.updateNote(theNote: noteDetail.theNote)
 
             // The user was in edit mode
-            tableView.reloadRowsAtIndexPaths([indexPath], withRowAnimation: UITableViewRowAnimation.Automatic)
+            tableView.reloadRows(at: [indexPath], with: .automatic)
         } else {
             // Otherwise, add a new record
             NoteStore.sharedNoteStore.createNote(noteDetail.theNote)
 
             // Get an index to insert the row at
-            let indexPath = NSIndexPath(forRow: NoteStore.sharedNoteStore.count()-1, inSection: 0)
+            let indexPath = IndexPath(row: NoteStore.sharedNoteStore.count() - 1, section: 0)
 
             // Update tableview
-            tableView.insertRowsAtIndexPaths([indexPath], withRowAnimation: UITableViewRowAnimation.Automatic)
+            tableView.insertRows(at: [indexPath], with: .automatic)
         }
     }
 
     // MARK: - Table view data source
 
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // Just return the note count
         return NoteStore.sharedNoteStore.count()
     }
 
 
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         // Fetch a reusable cell
-        guard let cell = tableView.dequeueReusableCellWithIdentifier("DetailTableViewCell", forIndexPath: indexPath) as? DetailTableViewCell else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "DetailTableViewCell", for: indexPath) as? DetailTableViewCell else {
             return UITableViewCell()
         }
 
@@ -101,13 +101,13 @@ class TableViewController: UITableViewController {
 
 
     // Override to support editing the table view.
-    override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
 
-        if editingStyle == .Delete {
+        if editingStyle == .delete {
             // Delete the row from the data source
             if NoteStore.sharedNoteStore.deleteNote(indexPath.row) {
                 // Delete the note from the tableview
-                tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)
+                tableView.deleteRows(at: [indexPath], with: .fade)
             }
         }
     }

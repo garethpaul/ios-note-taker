@@ -31,13 +31,14 @@ Priority:
   archive fallback behavior, storyboard guards, and note-content privacy
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates
-- Keep pinned macOS CI parsing `NoteTaker.xcodeproj` and its shared schemes
-  through the canonical `make check` gate
+- Keep app, unit-test, and UI-test targets on Swift 5 with iOS 12 deployment
+- Keep pinned macOS CI compiling the unsigned app and unit-test bundle through
+  the canonical `make check` gate
 
 Next priorities:
 
 - Strengthen tests around adding, editing, deleting, and displaying notes
-- Modernize Swift/project settings in a dedicated pass
+- Migrate future archive schema changes with explicit compatibility tests
 - Clarify persistence behavior and data ownership
 
 Contribution rules:
@@ -59,13 +60,13 @@ explicit.
 
 Current baseline: `make lint`, `make test`, `make build`, and `make check` run
 `scripts/check-baseline.py` without Xcode. It verifies plist/storyboard/scheme
-metadata, local `NoteStore.plist` persistence, title normalization, decoded title
+metadata, secure and atomic local `NoteStore.plist` persistence, title normalization, decoded title
 fallback behavior, guarded note lookup, delete result handling, reference delete
 result handling, navigation logo title view ownership, documents path guards,
 archive file protection, archive fallback behavior, and no logging, sync,
 analytics, upload, or network behavior in app sources.
-On macOS, the baseline should parse the Xcode project and shared schemes without
-opening note archives or accessing local note content.
+On macOS, the baseline should compile the unsigned app and unit-test bundle
+without launching the app, opening user archives, or accessing note content.
 
 ## What We Will Not Merge (For Now)
 

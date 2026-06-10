@@ -2,6 +2,14 @@
 
 ## 2026-06-10
 
+- Migrated app, unit-test, and UI-test targets from Swift 2-era syntax to Swift 5
+  with an iOS 12 deployment target.
+- Migrated notes to `NSSecureCoding` with class-restricted decoding.
+- Replaced legacy file archiving with throwing secure archiving and atomic data
+  writes before applying complete file protection.
+- Added a secure archive round-trip unit assertion.
+- Upgraded Xcode-enabled validation from project parsing to unsigned simulator
+  builds of the app and unit-test targets.
 - Added reference delete result handling so object-based note deletes report
   whether they actually removed and saved a note.
 - Added pinned, read-only macOS CI for the canonical `make check` baseline.

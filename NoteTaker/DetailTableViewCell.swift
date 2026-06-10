@@ -12,7 +12,7 @@ class DetailTableViewCell : UITableViewCell {
     @IBOutlet weak var noteTextLabel : UILabel!
 
     // Insert note contents into the cell
-    func setupCell(theNote:Note) {
+    func setupCell(_ theNote: Note) {
         // Save a weak reference to the note
         self.theNote = theNote
 
