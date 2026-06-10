@@ -4,6 +4,9 @@
 
 - Added reference delete result handling so object-based note deletes report
   whether they actually removed and saved a note.
+- Added pinned, read-only macOS CI for the canonical `make check` baseline.
+- Made Xcode-enabled checks parse `NoteTaker.xcodeproj` and its shared schemes
+  without opening note archives or accessing local note content.
 
 ## 2026-06-09
 

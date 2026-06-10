@@ -81,6 +81,11 @@ stay available while preserving the single source of truth.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Xcode metadata, verifies title normalization tests, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, navigation logo title view ownership, local note persistence hardening, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
+The pinned GitHub Actions check runs `make check` on `macos-15`. When Xcode is
+available, the baseline also runs `xcodebuild -list` against `NoteTaker.xcodeproj`
+to verify the project and shared schemes parse. It does not open note archives,
+run simulator builds, or access local note content.
+
 For full legacy verification on macOS, run `./build.sh`, Xcode's test action, or `xcodebuild test` with the appropriate scheme and destination.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.

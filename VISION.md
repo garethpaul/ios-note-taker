@@ -31,6 +31,8 @@ Priority:
   archive fallback behavior, storyboard guards, and note-content privacy
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates
+- Keep pinned macOS CI parsing `NoteTaker.xcodeproj` and its shared schemes
+  through the canonical `make check` gate
 
 Next priorities:
 
@@ -62,6 +64,8 @@ fallback behavior, guarded note lookup, delete result handling, reference delete
 result handling, navigation logo title view ownership, documents path guards,
 archive file protection, archive fallback behavior, and no logging, sync,
 analytics, upload, or network behavior in app sources.
+On macOS, the baseline should parse the Xcode project and shared schemes without
+opening note archives or accessing local note content.
 
 ## What We Will Not Merge (For Now)
 
