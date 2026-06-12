@@ -12,7 +12,8 @@
   builds of the app and unit-test targets.
 - Added reference delete result handling so object-based note deletes report
   whether they actually removed and saved a note.
-- Added pinned, read-only macOS CI for the canonical `make check` baseline.
+- Added pinned, read-only macOS CI with Python 3.12 and no persisted checkout
+  credentials for the canonical `make check` baseline.
 - Made Xcode-enabled checks parse `NoteTaker.xcodeproj` and its shared schemes
   without opening note archives or accessing local note content.
 

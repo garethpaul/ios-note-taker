@@ -32,8 +32,8 @@ Priority:
 - Keep `make lint`, `make test`, `make build`, and `make check` available as
   local verification gates
 - Keep app, unit-test, and UI-test targets on Swift 5 with iOS 12 deployment
-- Keep pinned macOS CI compiling the unsigned app and unit-test bundle through
-  the canonical `make check` gate
+- Keep pinned, credential-free macOS CI on Python 3.12, compiling the unsigned
+  app and unit-test bundle through the canonical `make check` gate
 
 Next priorities:
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import ast
 from pathlib import Path
 import plistlib
 import re
@@ -60,6 +61,38 @@ def parse_plist(relative_path, failures):
     except Exception as error:
         failures.append(f"{relative_path} is not a readable plist: {error}")
         return {}
+
+
+def has_unsigned_simulator_build(checker):
+    required_arguments = {
+        "xcodebuild",
+        "-project",
+        "NoteTaker.xcodeproj",
+        "-target",
+        "NoteTakerTests",
+        "-configuration",
+        "Debug",
+        "-sdk",
+        "iphonesimulator",
+        "CODE_SIGNING_ALLOWED=NO",
+        "build",
+    }
+    try:
+        tree = ast.parse(checker)
+    except SyntaxError:
+        return False
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.List):
+            continue
+        arguments = {
+            element.value
+            for element in node.elts
+            if isinstance(element, ast.Constant) and isinstance(element.value, str)
+        }
+        if required_arguments.issubset(arguments):
+            return True
+    return False
 
 
 def main():
@@ -139,6 +172,7 @@ def main():
     vision = read("VISION.md")
     security = read("SECURITY.md")
     changes = read("CHANGES.md")
+    checker = read("scripts/check-baseline.py")
     gitignore = read(".gitignore")
     makefile = read("Makefile")
     baseline_plan = BASELINE_PLAN.read_text(encoding="utf-8") if BASELINE_PLAN.exists() else ""
@@ -181,8 +215,9 @@ def main():
 
     require("class Note: NSObject, NSSecureCoding" in note and
             "static var supportsSecureCoding: Bool { true }" in note and
-            "decodeObject(of: NSString.self" in note and
-            "decodeObject(of: NSDate.self" in note,
+            'decodeObject(of: NSString.self, forKey: "title") as? String' in note and
+            'decodeObject(of: NSString.self, forKey: "text") as? String ?? ""' in note and
+            'decodeObject(of: NSDate.self, forKey: "date") as? Date ?? Date()' in note,
             "Note decoding must tolerate missing or incompatible archived fields",
             failures)
     require("[UIApplication.LaunchOptionsKey: Any]?" in app_sources,
@@ -253,7 +288,7 @@ def main():
             "getNote(index:) must reject invalid note indexes instead of indexing directly",
             failures)
     require("NSKeyedUnarchiver.unarchivedObject(ofClasses: allowedClasses, from: data) as? [Note] ?? []" in store and
-            "notes = []" in store and
+            "} catch {\n            notes = []\n        }" in store and
             "let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]" in store,
             "load must fall back to an empty note list for invalid archives",
             failures)
@@ -382,22 +417,31 @@ def main():
     require("status: completed" in reference_delete_plan,
             "note reference delete result plan must be marked completed",
             failures)
-    require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan,
-            "hosted project validation plan must be completed and document make check",
+    require("status: completed" in hosted_validation_plan and "make check" in hosted_validation_plan and
+            "Python 3.12" in hosted_validation_plan and "credential persistence" in hosted_validation_plan,
+            "hosted project validation plan must document completion, Python 3.12, and credential handling",
             failures)
     require("status: completed" in secure_swift_5_plan and "NSSecureCoding" in secure_swift_5_plan,
             "secure Swift 5 persistence plan must be completed and document NSSecureCoding",
             failures)
-    require("permissions:\n  contents: read" in workflow,
-            "Check workflow must use read-only repository permissions",
+    require(workflow.count("permissions:\n  contents: read") == 1 and
+            not re.search(r"(?m)^\s{2,}permissions:\s*$", workflow) and
+            not re.search(r"(?m)^\s+[A-Za-z0-9_-]+:\s*write\s*$", workflow),
+            "Check workflow must use one top-level read-only permissions block",
             failures)
     require("cancel-in-progress: true" in workflow and "runs-on: macos-15" in workflow and
             "timeout-minutes: 10" in workflow,
             "Check workflow must bound duplicate and long-running macOS jobs",
             failures)
-    require("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in workflow and
+    require(workflow.count("uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10") == 1 and
+            "persist-credentials: false" in workflow and
+            workflow.count("uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065") == 1 and
+            'python-version: "3.12"' in workflow and
             "run: make check" in workflow,
-            "Check workflow must pin checkout and run the canonical baseline",
+            "Check workflow must pin credential-free checkout and Python 3.12 before running the canonical baseline",
+            failures)
+    require(has_unsigned_simulator_build(checker),
+            "Checker must preserve the unsigned NoteTakerTests simulator build command",
             failures)
 
     if shutil.which("xcodebuild"):

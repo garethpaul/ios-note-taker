@@ -81,10 +81,10 @@ stay available while preserving the single source of truth.
 
 The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Swift 5 project metadata, verifies secure-coding round trips, title normalization tests, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, navigation logo title view ownership, atomic local note persistence, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
-The pinned GitHub Actions check runs `make check` on `macos-15`. When Xcode is
-available, the baseline also compiles the unsigned Swift 5 app and unit-test
-bundle for the iOS Simulator. It does not launch the app, open user note
-archives, read note content, or use signing material.
+The pinned, credential-free GitHub Actions check sets up Python 3.12 and runs
+`make check` on `macos-15`. The baseline compiles the unsigned Swift 5 app and
+unit-test bundle for the iOS Simulator. It does not launch the app, open user
+note archives, read note content, or use signing material.
 
 For runtime verification on macOS, use the shared Xcode schemes to run the unit
 tests and exercise create, edit, delete, and relaunch persistence flows.

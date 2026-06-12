@@ -11,12 +11,16 @@ project-file check.
 
 ## Completed Scope
 
-- Added a pinned GitHub Actions workflow with read-only repository permissions.
+- Added a pinned GitHub Actions workflow with read-only repository permissions
+  and disabled checkout credential persistence.
+- Pinned Python 3.12 setup for the canonical checker.
 - Runs the canonical `make check` gate on a bounded `macos-15` job.
 - Parses `NoteTaker.xcodeproj` and its shared schemes whenever Xcode is
   available.
-- Kept note archives, local note content, simulator builds, and signing outside
-  hosted CI.
+- Compiles the unsigned app and unit-test bundle for the iOS Simulator without
+  launching either target.
+- Kept note archives, local note content, simulator execution, and signing
+  outside hosted CI.
 - Extended the checker and documentation to preserve the CI contract.
 
 ## Verification
