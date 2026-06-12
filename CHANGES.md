@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-12
+
+- Requested complete file protection as part of each atomic secure note archive
+  write, while retaining explicit attribute repair.
+
 ## 2026-06-10
 
 - Migrated app, unit-test, and UI-test targets from Swift 2-era syntax to Swift 5

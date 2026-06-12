@@ -1,6 +1,6 @@
 # Protected Atomic Note Write
 
-status: planned
+status: completed
 
 ## Context
 
@@ -10,7 +10,7 @@ filesystem operation before it has the intended protection class, and a failed
 attribute update can leave newly written note content less protected than
 expected.
 
-## Scope
+## Completed Scope
 
 - Request complete file protection as part of the atomic data write.
 - Retain the explicit attribute update to repair existing or platform-specific

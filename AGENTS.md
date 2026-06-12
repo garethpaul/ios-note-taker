@@ -45,7 +45,7 @@
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 - Keep signing files, local xcconfig files, and environment files out of git.
 - Notes can contain sensitive personal information. Keep note content local by default, avoid logging note content, and require explicit design before adding sync, upload, analytics, or export behavior.
-- `scripts/check-baseline.py` verifies local persistence saves, archive file protection, archive fallback behavior, storyboard cast guards, invalid hex fallback, and static privacy guardrails.
+- `scripts/check-baseline.py` verifies protected atomic local persistence saves, explicit archive file-protection repair, archive fallback behavior, storyboard cast guards, invalid hex fallback, and static privacy guardrails.
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 

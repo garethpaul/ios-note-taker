@@ -22,6 +22,7 @@ NAV_LOGO_PLAN = ROOT / "docs/plans/2026-06-09-navigation-logo-title-view.md"
 REFERENCE_DELETE_PLAN = ROOT / "docs/plans/2026-06-10-note-reference-delete-result.md"
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 SECURE_SWIFT_5_PLAN = ROOT / "docs/plans/2026-06-10-secure-swift-5-persistence.md"
+PROTECTED_WRITE_PLAN = ROOT / "docs/plans/2026-06-12-protected-atomic-note-write.md"
 
 
 def require(condition, message, failures):
@@ -139,6 +140,7 @@ def main():
         "docs/plans/2026-06-10-note-reference-delete-result.md",
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-secure-swift-5-persistence.md",
+        "docs/plans/2026-06-12-protected-atomic-note-write.md",
         "img/app.gif",
     ]
 
@@ -187,6 +189,7 @@ def main():
     reference_delete_plan = REFERENCE_DELETE_PLAN.read_text(encoding="utf-8") if REFERENCE_DELETE_PLAN.exists() else ""
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     secure_swift_5_plan = SECURE_SWIFT_5_PLAN.read_text(encoding="utf-8") if SECURE_SWIFT_5_PLAN.exists() else ""
+    protected_write_plan = PROTECTED_WRITE_PLAN.read_text(encoding="utf-8") if PROTECTED_WRITE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
@@ -269,10 +272,10 @@ def main():
             "guard let url = archiveFileURL() else",
             "return",
             "NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)",
-            "data.write(to: url, options: .atomic)",
+            "data.write(to: url, options: [.atomic, .completeFileProtection])",
             "applyFileProtection(url.path)",
         ],
-        "save must securely archive, atomically write, and then protect note data",
+        "save must securely archive, atomically write protected note data, and repair attributes",
         failures,
     )
     require("func applyFileProtection(_ path: String)" in store and
@@ -423,6 +426,9 @@ def main():
             failures)
     require("status: completed" in secure_swift_5_plan and "NSSecureCoding" in secure_swift_5_plan,
             "secure Swift 5 persistence plan must be completed and document NSSecureCoding",
+            failures)
+    require("status: completed" in protected_write_plan and "mutation" in protected_write_plan.lower(),
+            "protected atomic note write plan must record completed mutation verification",
             failures)
     require(workflow.count("permissions:\n  contents: read") == 1 and
             not re.search(r"(?m)^\s{2,}permissions:\s*$", workflow) and

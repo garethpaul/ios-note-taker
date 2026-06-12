@@ -87,7 +87,7 @@ class NoteStore {
         }
         do {
             let data = try NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)
-            try data.write(to: url, options: .atomic)
+            try data.write(to: url, options: [.atomic, .completeFileProtection])
             applyFileProtection(url.path)
         } catch {
             // Keep the in-memory notes available when local persistence fails.
