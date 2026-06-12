@@ -34,6 +34,14 @@ def read(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8", errors="replace")
 
 
+def markdown_section(text, heading):
+    match = re.search(
+        rf"(?ms)^## {re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
+        text,
+    )
+    return match.group(1).strip() if match else ""
+
+
 def strip_swift_line_comments(text):
     return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
 
@@ -427,9 +435,39 @@ def main():
     require("status: completed" in secure_swift_5_plan and "NSSecureCoding" in secure_swift_5_plan,
             "secure Swift 5 persistence plan must be completed and document NSSecureCoding",
             failures)
-    require("status: completed" in protected_write_plan and "mutation" in protected_write_plan.lower(),
-            "protected atomic note write plan must record completed mutation verification",
+    protected_write_status = re.findall(
+        r"(?mi)^status:\s*(.+?)\s*$", protected_write_plan
+    )
+    protected_write_work = markdown_section(protected_write_plan, "Work Completed")
+    protected_write_verification = markdown_section(
+        protected_write_plan, "Verification Completed"
+    )
+    require(protected_write_status == ["completed"] and protected_write_work,
+            "protected atomic note write plan must record one completed status and completed work",
             failures)
+    require(protected_write_verification and
+            not re.search(r"(?i)\b(?:pending|todo|tbd|not run)\b", protected_write_verification),
+            "protected atomic note write plan must record finished verification without pending markers",
+            failures)
+    for evidence in [
+        "make check",
+        "make lint",
+        "make test",
+        "make build",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "git diff --check",
+        "27395126378",
+        "27395135480",
+        "27395178307",
+        "27402323479",
+        "d330ffdb1557d111868248c8c1b2055b39cda02e",
+        "58f8f0bc9db12e991a6fa6116794c8a578e593d9",
+        "data.write(to: url, options: [.atomic, .completeFileProtection])",
+        "applyFileProtection(url.path)",
+    ]:
+        require(evidence in protected_write_verification,
+                f"protected atomic note write plan must preserve verification evidence: {evidence}",
+                failures)
     require(workflow.count("permissions:\n  contents: read") == 1 and
             not re.search(r"(?m)^\s{2,}permissions:\s*$", workflow) and
             not re.search(r"(?m)^\s+[A-Za-z0-9_-]+:\s*write\s*$", workflow),
