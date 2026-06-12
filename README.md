@@ -62,7 +62,7 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - Reference delete results report whether the requested note object was removed.
 - The mini logo is scoped to each navigation item title view instead of being
   added as a navigation-controller overlay.
-- Notes are local app data stored through `NoteStore.plist` in the app documents area with platform file protection applied after successful saves. If the documents path is unavailable, the store keeps an empty in-memory list instead of writing to a fallback path. The app does not sync, upload, or analyze note content.
+- Notes are local app data stored through `NoteStore.plist` in the app documents area. Saves request complete file protection as part of the atomic replacement and then repair the resulting file attributes explicitly. If the documents path is unavailable, the store keeps an empty in-memory list instead of writing to a fallback path. The app does not sync, upload, or analyze note content.
 
 ## Testing and Verification
 

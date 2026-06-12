@@ -24,7 +24,7 @@ Priority:
 - Keep note delete result handling aligned between the store and table view
 - Keep reference delete result handling explicit for object-based deletes
 - Keep the mini logo scoped to each navigation item title view
-- Keep the local note archive protected after successful saves
+- Request complete file protection during atomic note archive replacement and retain explicit attribute repair
 - Avoid fallback archive writes when the documents path is unavailable
 - Maintain build script and README context
 - Keep `scripts/check-baseline.py` passing for local-first persistence,
@@ -60,10 +60,10 @@ explicit.
 
 Current baseline: `make lint`, `make test`, `make build`, and `make check` run
 `scripts/check-baseline.py` without Xcode. It verifies plist/storyboard/scheme
-metadata, secure and atomic local `NoteStore.plist` persistence, title normalization, decoded title
+metadata, secure and protected atomic local `NoteStore.plist` persistence, title normalization, decoded title
 fallback behavior, guarded note lookup, delete result handling, reference delete
 result handling, navigation logo title view ownership, documents path guards,
-archive file protection, archive fallback behavior, and no logging, sync,
+archive file-protection repair, archive fallback behavior, and no logging, sync,
 analytics, upload, or network behavior in app sources.
 On macOS, the baseline should compile the unsigned app and unit-test bundle
 without launching the app, opening user archives, or accessing note content.
