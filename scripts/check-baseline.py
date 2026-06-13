@@ -25,6 +25,7 @@ SECURE_SWIFT_5_PLAN = ROOT / "docs/plans/2026-06-10-secure-swift-5-persistence.m
 PROTECTED_WRITE_PLAN = ROOT / "docs/plans/2026-06-12-protected-atomic-note-write.md"
 EDIT_SEGUE_PLAN = ROOT / "docs/plans/2026-06-13-edit-note-segue-identifier.md"
 CORRUPT_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md"
+LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 
 
 def require(condition, message, failures):
@@ -190,6 +191,7 @@ def main():
         "docs/plans/2026-06-12-protected-atomic-note-write.md",
         "docs/plans/2026-06-13-edit-note-segue-identifier.md",
         "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md",
+        "docs/plans/2026-06-13-location-independent-make.md",
         "img/app.gif",
     ]
 
@@ -241,6 +243,7 @@ def main():
     protected_write_plan = PROTECTED_WRITE_PLAN.read_text(encoding="utf-8") if PROTECTED_WRITE_PLAN.exists() else ""
     edit_segue_plan = EDIT_SEGUE_PLAN.read_text(encoding="utf-8") if EDIT_SEGUE_PLAN.exists() else ""
     corrupt_archive_plan = CORRUPT_ARCHIVE_PLAN.read_text(encoding="utf-8") if CORRUPT_ARCHIVE_PLAN.exists() else ""
+    location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
@@ -439,8 +442,12 @@ def main():
     require("*.local.xcconfig" in gitignore and ".env" in gitignore and "DerivedData" in gitignore,
             ".gitignore must exclude local config and Xcode build products",
             failures)
-    require(".PHONY: build check lint test" in makefile and "lint test build: check" in makefile,
-            "Makefile must expose lint, test, and build aliases for the local baseline",
+    require(".PHONY: build check lint test" in makefile and
+            "ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile and
+            "lint test build: check" in makefile and
+            'python3 "$(ROOT)/scripts/check-baseline.py"' in makefile and
+            "python3 scripts/check-baseline.py" not in makefile,
+            "Makefile must expose location-independent lint, test, build, and check aliases",
             failures)
     require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and
@@ -509,11 +516,35 @@ def main():
             "hostile mutations" in edit_segue_plan.lower(),
             "edit note segue plan must record completed status and verification",
             failures)
+    location_make_statuses = re.findall(
+        r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE
+    )
+    location_make_verification = markdown_section(
+        location_independent_make_plan, "Verification Completed"
+    )
+    require(location_make_statuses == ["status: completed"] and
+            "All four Make gates passed from the checkout" in location_make_verification and
+            "All four Make gates passed from `/tmp` through the absolute Makefile path" in location_make_verification and
+            "python3 -m py_compile scripts/check-baseline.py" in location_make_verification and
+            "sh -n build.sh" in location_make_verification and
+            "project metadata parsing" in location_make_verification and
+            "git diff --check" in location_make_verification and
+            "`xcodebuild` was unavailable" in location_make_verification and
+            "Five isolated hostile mutations were rejected" in location_make_verification and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      location_make_verification,
+                      re.IGNORECASE) is None,
+            "location-independent Make plan must record completed status and actual local verification",
+            failures)
     require("corrupt archive quarantine" in readme.lower() and
             "corrupt archive quarantine" in security.lower() and
             "quarantine only readable corrupt" in vision.lower() and
             "corrupt archive quarantine" in changes.lower(),
             "Docs must record readable corrupt archive quarantine",
+            failures)
+    require("absolute makefile path" in readme.lower() and
+            "location-independent" in changes.lower(),
+            "README and CHANGES must document location-independent Make verification",
             failures)
     corrupt_archive_statuses = re.findall(
         r"^status: .+$", corrupt_archive_plan, flags=re.MULTILINE
