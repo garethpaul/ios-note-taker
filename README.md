@@ -79,7 +79,7 @@ The `lint`, `test`, and `build` targets intentionally alias the canonical baseli
 on hosts without Xcode, so the standard local gate commands
 stay available while preserving the single source of truth.
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Swift 5 project metadata, verifies secure-coding round trips, title normalization tests, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, navigation logo title view ownership, atomic local note persistence, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
+The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Swift 5 project metadata, verifies secure-coding round trips, title normalization tests, decoded title fallback behavior, guarded note lookup, delete result handling, reference delete result handling, selected-note identity during edit navigation, navigation logo title view ownership, atomic local note persistence, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
 The pinned, credential-free GitHub Actions check sets up Python 3.12 and runs
 `make check` on `macos-15`. The baseline compiles the unsigned Swift 5 app and
@@ -100,6 +100,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - Notes can contain sensitive personal information. Keep note content local by default, avoid logging note content, and require explicit design before adding sync, upload, analytics, or export behavior.
 - `scripts/check-baseline.py` verifies local persistence saves, archive file protection, archive fallback behavior, storyboard cast guards, invalid hex fallback, and static privacy guardrails.
+- Existing-note navigation keeps selected-note identity through the unique
+  `NoteDetailPush` cell segue; add-note routing remains separate.
 
 ## Maintenance Notes
 
@@ -111,6 +113,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-09-note-delete-result-guard.md` for the note delete result guardrail.
 - See `docs/plans/2026-06-10-note-reference-delete-result.md` for the reference delete result guardrail.
 - See `docs/plans/2026-06-09-navigation-logo-title-view.md` for the navigation logo title view guardrail.
+- See `docs/plans/2026-06-13-edit-note-segue-identifier.md` for the existing-note
+  edit routing guardrail.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for the local gate alias guardrail.
 - Run `make lint`, `make test`, `make build`, and `make check` before pushing changes to Swift sources, plist/storyboard/scheme files, persistence behavior, build scripts, or privacy documentation.
 

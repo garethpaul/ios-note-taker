@@ -23,6 +23,7 @@ REFERENCE_DELETE_PLAN = ROOT / "docs/plans/2026-06-10-note-reference-delete-resu
 HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation.md"
 SECURE_SWIFT_5_PLAN = ROOT / "docs/plans/2026-06-10-secure-swift-5-persistence.md"
 PROTECTED_WRITE_PLAN = ROOT / "docs/plans/2026-06-12-protected-atomic-note-write.md"
+EDIT_SEGUE_PLAN = ROOT / "docs/plans/2026-06-13-edit-note-segue-identifier.md"
 
 
 def require(condition, message, failures):
@@ -104,6 +105,43 @@ def has_unsigned_simulator_build(checker):
     return False
 
 
+def has_note_detail_storyboard_contract():
+    try:
+        root = ET.parse(ROOT / "NoteTaker/Base.lproj/Main.storyboard").getroot()
+    except (ET.ParseError, OSError):
+        return False
+
+    detail = root.find(".//viewController[@storyboardIdentifier='DetailViewController']")
+    cell = root.find(".//tableViewCell[@customClass='DetailTableViewCell']")
+    add_button = root.find(".//barButtonItem[@systemItem='add']")
+    save_button = root.find(".//barButtonItem[@systemItem='save']")
+    if detail is None or cell is None or add_button is None or save_button is None:
+        return False
+
+    detail_id = detail.get("id")
+    edit_segues = root.findall(".//segue[@identifier='NoteDetailPush']")
+    add_segues = root.findall(".//segue[@identifier='NoteDetailAdd']")
+    cell_segues = cell.findall("./connections/segue")
+    add_button_segues = add_button.findall("./connections/segue")
+    save_unwinds = save_button.findall("./connections/segue")
+
+    return (
+        len(edit_segues) == 1
+        and len(cell_segues) == 1
+        and edit_segues[0] is cell_segues[0]
+        and edit_segues[0].get("destination") == detail_id
+        and edit_segues[0].get("kind") == "show"
+        and len(add_segues) == 1
+        and len(add_button_segues) == 1
+        and add_segues[0] is add_button_segues[0]
+        and add_segues[0].get("destination") == detail_id
+        and add_segues[0].get("kind") == "show"
+        and len(save_unwinds) == 1
+        and save_unwinds[0].get("kind") == "unwind"
+        and save_unwinds[0].get("unwindAction") == "saveFromNoteDetail:"
+    )
+
+
 def main():
     failures = []
     required_files = [
@@ -149,6 +187,7 @@ def main():
         "docs/plans/2026-06-10-hosted-project-validation.md",
         "docs/plans/2026-06-10-secure-swift-5-persistence.md",
         "docs/plans/2026-06-12-protected-atomic-note-write.md",
+        "docs/plans/2026-06-13-edit-note-segue-identifier.md",
         "img/app.gif",
     ]
 
@@ -198,6 +237,7 @@ def main():
     hosted_validation_plan = HOSTED_VALIDATION_PLAN.read_text(encoding="utf-8") if HOSTED_VALIDATION_PLAN.exists() else ""
     secure_swift_5_plan = SECURE_SWIFT_5_PLAN.read_text(encoding="utf-8") if SECURE_SWIFT_5_PLAN.exists() else ""
     protected_write_plan = PROTECTED_WRITE_PLAN.read_text(encoding="utf-8") if PROTECTED_WRITE_PLAN.exists() else ""
+    edit_segue_plan = EDIT_SEGUE_PLAN.read_text(encoding="utf-8") if EDIT_SEGUE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
@@ -332,6 +372,11 @@ def main():
     require("as? DetailViewController" in table and "as? DetailTableViewCell" in table and "as? DetailTableViewCell" in table,
             "TableViewController must guard storyboard casts",
             failures)
+    require('segue.identifier == "NoteDetailPush"' in table and
+            "noteDetail.theNote = theNote" in table and
+            has_note_detail_storyboard_contract(),
+            "Storyboard edit routing must pass the selected note through the unique cell-owned NoteDetailPush segue",
+            failures)
     require("if NoteStore.sharedNoteStore.deleteNote(indexPath.row)" in table and
             "tableView.deleteRows(at: [indexPath], with: .fade)" in table,
             "TableViewController must delete visible rows only after store deletion succeeds",
@@ -380,24 +425,27 @@ def main():
             "file protection" in readme.lower() and "documents path" in readme.lower() and
             "title normalization" in readme.lower() and "decoded title" in readme.lower() and
             "note lookup" in readme.lower() and "delete result" in readme.lower() and
-            "reference delete" in readme.lower() and "title view" in readme.lower(),
+            "reference delete" in readme.lower() and "title view" in readme.lower() and
+            "selected-note identity" in readme.lower(),
             "README must document static verification, local note persistence, title normalization, path guards, and file protection",
             failures)
     require("scripts/check-baseline.py" in vision and "make lint" in vision and "make test" in vision and "make build" in vision and "local-first" in vision.lower() and
             "documents path" in vision.lower() and "title normalization" in vision.lower() and "title view" in vision.lower() and
             "decoded title" in vision.lower() and "note lookup" in vision.lower() and "delete result" in vision.lower() and
-            "reference delete" in vision.lower(),
+            "reference delete" in vision.lower() and "selected-note identity" in vision.lower(),
             "VISION must describe the current static local-first baseline",
             failures)
     require("note content" in security.lower() and "make check" in security and
             "local" in security.lower() and "title normalization" in security.lower() and "title view" in security.lower() and
             "decoded title" in security.lower() and "note lookup" in security.lower() and "delete result" in security.lower() and
-            "reference delete" in security.lower(),
+            "reference delete" in security.lower() and "selected-note identity" in security.lower(),
             "SECURITY must document note-content privacy and static baseline guardrails",
             failures)
     require("persist" in changes.lower() and "archive" in changes.lower() and "file protection" in changes.lower() and
             "documents path" in changes.lower() and "title normalization" in changes.lower() and "decoded title" in changes.lower() and
-            "reference delete" in changes.lower() and "title view" in changes.lower() and "make check" in changes and "make lint" in changes and "make test" in changes and "make build" in changes,
+            "reference delete" in changes.lower() and "title view" in changes.lower() and
+            "selected-note identity" in changes.lower() and "make check" in changes and
+            "make lint" in changes and "make test" in changes and "make build" in changes,
             "CHANGES must record persistence hardening, title normalization, path guarding, file protection, and baseline",
             failures)
     require("note lookup" in changes.lower(),
@@ -434,6 +482,11 @@ def main():
             failures)
     require("status: completed" in secure_swift_5_plan and "NSSecureCoding" in secure_swift_5_plan,
             "secure Swift 5 persistence plan must be completed and document NSSecureCoding",
+            failures)
+    require("status: completed" in edit_segue_plan and
+            "All four Make gates" in edit_segue_plan and
+            "hostile mutations" in edit_segue_plan.lower(),
+            "edit note segue plan must record completed status and verification",
             failures)
     protected_write_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", protected_write_plan

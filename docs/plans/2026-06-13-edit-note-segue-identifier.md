@@ -1,6 +1,6 @@
 # Edit Note Segue Identifier
 
-status: planned
+status: completed
 
 ## Context
 
@@ -53,17 +53,25 @@ and preventing the intended reference-backed update path.
 - Do not add sync, networking, analytics, upload, logging, or telemetry.
 - Do not claim interactive simulator validation without Xcode.
 
-## Verification
+## Work Completed
 
-- `make lint`
-- `make test`
-- `make build`
-- `make check`
-- `python3 -m py_compile scripts/check-baseline.py`
-- Parse plist, storyboard, XIB, scheme, workspace, project, and workflow
-  metadata with available local parsers.
-- `sh -n build.sh`
-- `git diff --check`
-- Hostile mutations removing, renaming, relocating, or duplicating the edit
-  identifier, changing the add identifier, weakening controller guards, or
-  falsifying plan evidence must be rejected.
+- Assigned `NoteDetailPush` to the prototype-cell show segue that opens the
+  existing-note detail screen.
+- Added a parsed storyboard contract for unique cell-owned edit routing,
+  separate add routing, and the save unwind action.
+- Preserved guarded controller casts and selected-note assignment.
+- Documented the selected-note identity boundary across baseline guidance.
+
+## Verification Completed
+
+- All four Make gates, `make lint`, `make test`, `make build`, and `make check`,
+  passed against the complete static baseline.
+- `python3 -m py_compile scripts/check-baseline.py`, plist parsing, storyboard,
+  XIB, scheme, workspace, and SVG XML parsing, workflow YAML parsing,
+  `sh -n build.sh`, and `git diff --check` passed.
+- Eleven hostile mutations removing, renaming, duplicating, relocating, or
+  retargeting the edit segue, changing add or unwind routing, weakening the
+  destination cast, replacing selected-note assignment, or falsifying plan
+  status or verification evidence were rejected.
+- The local environment did not provide `xcodebuild`, so interactive edit
+  navigation and simulator execution were not claimed.
