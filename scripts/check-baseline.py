@@ -24,6 +24,7 @@ HOSTED_VALIDATION_PLAN = ROOT / "docs/plans/2026-06-10-hosted-project-validation
 SECURE_SWIFT_5_PLAN = ROOT / "docs/plans/2026-06-10-secure-swift-5-persistence.md"
 PROTECTED_WRITE_PLAN = ROOT / "docs/plans/2026-06-12-protected-atomic-note-write.md"
 EDIT_SEGUE_PLAN = ROOT / "docs/plans/2026-06-13-edit-note-segue-identifier.md"
+CORRUPT_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md"
 
 
 def require(condition, message, failures):
@@ -188,6 +189,7 @@ def main():
         "docs/plans/2026-06-10-secure-swift-5-persistence.md",
         "docs/plans/2026-06-12-protected-atomic-note-write.md",
         "docs/plans/2026-06-13-edit-note-segue-identifier.md",
+        "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md",
         "img/app.gif",
     ]
 
@@ -238,6 +240,7 @@ def main():
     secure_swift_5_plan = SECURE_SWIFT_5_PLAN.read_text(encoding="utf-8") if SECURE_SWIFT_5_PLAN.exists() else ""
     protected_write_plan = PROTECTED_WRITE_PLAN.read_text(encoding="utf-8") if PROTECTED_WRITE_PLAN.exists() else ""
     edit_segue_plan = EDIT_SEGUE_PLAN.read_text(encoding="utf-8") if EDIT_SEGUE_PLAN.exists() else ""
+    corrupt_archive_plan = CORRUPT_ARCHIVE_PLAN.read_text(encoding="utf-8") if CORRUPT_ARCHIVE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
@@ -338,10 +341,25 @@ def main():
             "return nil" in get_note.group(0),
             "getNote(index:) must reject invalid note indexes instead of indexing directly",
             failures)
-    require("NSKeyedUnarchiver.unarchivedObject(ofClasses: allowedClasses, from: data) as? [Note] ?? []" in store and
-            "} catch {\n            notes = []\n        }" in store and
-            "let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]" in store,
-            "load must fall back to an empty note list for invalid archives",
+    require("let data: Data" in store and
+            "data = try Data(contentsOf: fileURL)" in store and
+            "} catch {\n            notes = []\n            return\n        }\n\n        do {" in store,
+            "load must leave unreadable protected archives in place before decode handling",
+            failures)
+    require("let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]" in store and
+            "guard let decodedNotes = try NSKeyedUnarchiver.unarchivedObject(" in store and
+            ") as? [Note] else {" in store and
+            store.count("quarantineCorruptArchive(fileURL)") == 2 and
+            "notes = decodedNotes" in store,
+            "load must quarantine thrown and wrong-root secure decode failures",
+            failures)
+    require("func quarantineCorruptArchive(_ archiveURL: URL)" in store and
+            "NoteStore.corrupt.plist" in store and
+            "fileManager.fileExists(atPath: quarantineURL.path)" in store and
+            "try fileManager.removeItem(at: quarantineURL)" in store and
+            "try fileManager.moveItem(at: archiveURL, to: quarantineURL)" in store and
+            "applyFileProtection(quarantineURL.path)" in store,
+            "corrupt archive quarantine must replace stale quarantine and preserve file protection",
             failures)
     require_order(
         store,
@@ -366,6 +384,9 @@ def main():
             "testNoteStoreGetNoteRejectsInvalidIndexes" in unit_tests and
             "testNoteStoreDeleteNoteRejectsInvalidIndexes" in unit_tests and
             "testNoteStoreDeleteNoteByReferenceReportsResults" in unit_tests and
+            "testReadableCorruptArchiveIsQuarantined" in unit_tests and
+            "testWrongArchiveRootTypeIsQuarantined" in unit_tests and
+            "testValidArchiveRemainsAtLivePath" in unit_tests and
             "XCTAssert(true" not in unit_tests and "testPerformanceExample" not in unit_tests,
             "NoteTakerTests must replace template tests with note-title normalization assertions",
             failures)
@@ -487,6 +508,39 @@ def main():
             "All four Make gates" in edit_segue_plan and
             "hostile mutations" in edit_segue_plan.lower(),
             "edit note segue plan must record completed status and verification",
+            failures)
+    require("corrupt archive quarantine" in readme.lower() and
+            "corrupt archive quarantine" in security.lower() and
+            "quarantine only readable corrupt" in vision.lower() and
+            "corrupt archive quarantine" in changes.lower(),
+            "Docs must record readable corrupt archive quarantine",
+            failures)
+    corrupt_archive_statuses = re.findall(
+        r"^status: .+$", corrupt_archive_plan, flags=re.MULTILINE
+    )
+    corrupt_archive_sections = corrupt_archive_plan.split(
+        "## Verification Completed\n", 1
+    )
+    corrupt_archive_verification = (
+        corrupt_archive_sections[1]
+        if len(corrupt_archive_sections) == 2 else ""
+    )
+    corrupt_archive_required_evidence = (
+        "All four Make gates",
+        "`xcodebuild` was",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "sh -n build.sh",
+        "plist, storyboard, XIB, scheme, workspace, SVG, and workflow YAML parsing",
+        "git diff --check",
+        "Seven isolated hostile mutations",
+    )
+    require(corrupt_archive_statuses == ["status: completed"]
+            and all(item in corrupt_archive_verification
+                    for item in corrupt_archive_required_evidence)
+            and re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                          corrupt_archive_verification,
+                          re.IGNORECASE) is None,
+            "corrupt note archive quarantine plan must record completed status and actual local verification",
             failures)
     protected_write_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", protected_write_plan
