@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Added protected corrupt archive quarantine after readable note data fails
+  secure decoding, while leaving unreadable protected archives in place.
 - Restored selected-note identity by assigning `NoteDetailPush` to the
   prototype-cell segue used to edit existing notes.
 

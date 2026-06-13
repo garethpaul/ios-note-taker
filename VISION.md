@@ -28,6 +28,8 @@ Priority:
 - Keep the mini logo scoped to each navigation item title view
 - Request complete file protection during atomic note archive replacement and retain explicit attribute repair
 - Avoid fallback archive writes when the documents path is unavailable
+- Preserve unreadable protected archives and quarantine only readable corrupt
+  archive bytes
 - Maintain build script and README context
 - Keep `scripts/check-baseline.py` passing for local-first persistence,
   archive fallback behavior, storyboard guards, and note-content privacy

@@ -1,6 +1,6 @@
 # Corrupt Note Archive Quarantine
 
-status: planned
+status: completed
 
 ## Context
 
@@ -45,3 +45,34 @@ that is only temporarily unreadable because complete file protection is active.
 - Hostile mutations must reject quarantine on read failure, missing decode and
   root-type quarantine, missing replacement or protection, stale plan status,
   and missing verification evidence.
+
+## Work Completed
+
+- Split archive loading into a read stage and a secure decode stage so missing,
+  protected, or otherwise unreadable files remain at the live path.
+- Quarantined both thrown secure-decoding failures and successfully decoded
+  values with the wrong root type.
+- Replaced stale quarantine data, moved current corrupt bytes to a deterministic
+  sibling path, and reapplied complete file protection without logging content
+  or paths.
+- Added an internal injectable archive URL and focused XCTest intent for corrupt
+  bytes, wrong root types, and valid live archives while preserving the
+  production singleton.
+
+## Verification Completed
+
+- All four Make gates passed locally and reported that `xcodebuild` was
+  unavailable, so only the static iOS baseline ran on this host.
+- `python3 -m py_compile scripts/check-baseline.py`, `sh -n build.sh`, plist, storyboard, XIB, scheme, workspace, SVG, and workflow YAML parsing,
+  and `git diff --check` passed.
+- Seven isolated hostile mutations were rejected: quarantine on read failure,
+  missing wrong-root quarantine, missing thrown-decode quarantine, missing stale
+  quarantine replacement, missing protection repair, stale plan status, and
+  missing verification evidence.
+- Exact-base comparison confirmed project files, schemes, storyboard routing,
+  assets, and hosted workflow configuration remained unchanged.
+- Intended-file generated-artifact, secret-pattern, note-content logging, and
+  forbidden network/sync/upload/analytics scans passed.
+- Hosted macOS app and unit-test bundle compilation plus code-scanning evidence
+  is recorded separately after push; this plan claims only completed local
+  static verification.

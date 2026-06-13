@@ -7,8 +7,18 @@ import Foundation
 class NoteStore {
     static let sharedNoteStore = NoteStore()
 
+    private let archiveURL: URL?
+
     // Private init to force usage of singleton
     private init() {
+        archiveURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("NoteStore.plist")
+        load()
+    }
+
+    init(archiveURL: URL?) {
+        self.archiveURL = archiveURL
         load()
     }
 
@@ -75,9 +85,7 @@ class NoteStore {
 
     // 1: Find the file & directory we want to save to...
     func archiveFileURL() -> URL? {
-        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-            .first?
-            .appendingPathComponent("NoteStore.plist")
+        return archiveURL
     }
 
     // 2: Do the save to disk.....
@@ -103,6 +111,26 @@ class NoteStore {
         }
     }
 
+    private func corruptArchiveFileURL(_ archiveURL: URL) -> URL {
+        return archiveURL.deletingLastPathComponent()
+            .appendingPathComponent("NoteStore.corrupt.plist")
+    }
+
+    private func quarantineCorruptArchive(_ archiveURL: URL) {
+        let fileManager = FileManager.default
+        let quarantineURL = corruptArchiveFileURL(archiveURL)
+
+        do {
+            if fileManager.fileExists(atPath: quarantineURL.path) {
+                try fileManager.removeItem(at: quarantineURL)
+            }
+            try fileManager.moveItem(at: archiveURL, to: quarantineURL)
+            applyFileProtection(quarantineURL.path)
+        } catch {
+            // Keep note content and local paths out of logs when quarantine fails.
+        }
+    }
+
 
     // 3: Do the reload from disk....
     func load() {
@@ -111,12 +139,28 @@ class NoteStore {
             return
         }
 
+        let data: Data
         do {
-            let data = try Data(contentsOf: fileURL)
-            let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]
-            notes = try NSKeyedUnarchiver.unarchivedObject(ofClasses: allowedClasses, from: data) as? [Note] ?? []
+            data = try Data(contentsOf: fileURL)
         } catch {
             notes = []
+            return
+        }
+
+        do {
+            let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]
+            guard let decodedNotes = try NSKeyedUnarchiver.unarchivedObject(
+                ofClasses: allowedClasses,
+                from: data
+            ) as? [Note] else {
+                notes = []
+                quarantineCorruptArchive(fileURL)
+                return
+            }
+            notes = decodedNotes
+        } catch {
+            notes = []
+            quarantineCorruptArchive(fileURL)
         }
     }
     

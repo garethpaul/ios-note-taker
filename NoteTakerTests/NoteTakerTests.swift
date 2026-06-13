@@ -12,6 +12,17 @@ import XCTest
 
 class NoteTakerTests: XCTestCase {
 
+    private func temporaryArchiveURLs() throws -> (directory: URL, archive: URL, quarantine: URL) {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return (
+            directory,
+            directory.appendingPathComponent("NoteStore.plist"),
+            directory.appendingPathComponent("NoteStore.corrupt.plist")
+        )
+    }
+
     func testNoteTitleNormalizationTrimsWhitespace() {
         XCTAssertEqual(Note.normalizedTitle("  Groceries\n"), "Groceries", "Note titles should be trimmed before saving")
     }
@@ -43,6 +54,53 @@ class NoteTakerTests: XCTestCase {
         XCTAssertEqual(decodedNote?.title, "Groceries")
         XCTAssertEqual(decodedNote?.text, "Milk")
         XCTAssertEqual(decodedNote?.date, note.date)
+    }
+
+    func testReadableCorruptArchiveIsQuarantined() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let corruptData = Data("not an archive".utf8)
+        try corruptData.write(to: urls.archive)
+
+        let store = NoteStore(archiveURL: urls.archive)
+
+        XCTAssertEqual(store.count(), 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls.archive.path))
+        XCTAssertEqual(try Data(contentsOf: urls.quarantine), corruptData)
+    }
+
+    func testWrongArchiveRootTypeIsQuarantined() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let data = try NSKeyedArchiver.archivedData(
+            withRootObject: NSString(string: "not notes"),
+            requiringSecureCoding: true
+        )
+        try data.write(to: urls.archive)
+
+        let store = NoteStore(archiveURL: urls.archive)
+
+        XCTAssertEqual(store.count(), 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls.archive.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: urls.quarantine.path))
+    }
+
+    func testValidArchiveRemainsAtLivePath() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let note = Note()
+        note.title = "Private"
+        let data = try NSKeyedArchiver.archivedData(
+            withRootObject: [note],
+            requiringSecureCoding: true
+        )
+        try data.write(to: urls.archive)
+
+        let store = NoteStore(archiveURL: urls.archive)
+
+        XCTAssertEqual(store.count(), 1)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: urls.archive.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls.quarantine.path))
     }
 
     func testNoteStoreGetNoteRejectsInvalidIndexes() {
