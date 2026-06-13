@@ -84,7 +84,7 @@
                                     <outlet property="noteDateLabel" destination="1oX-lO-eap" id="hzu-JA-BmN"/>
                                     <outlet property="noteTextLabel" destination="Xso-4E-BW8" id="Df6-k4-T4S"/>
                                     <outlet property="noteTitleLabel" destination="2bI-PN-1ZI" id="I83-GX-4mN"/>
-                                    <segue destination="ZZg-jO-NX9" kind="show" id="HEE-Ta-4gH"/>
+                                    <segue destination="ZZg-jO-NX9" kind="show" identifier="NoteDetailPush" id="HEE-Ta-4gH"/>
                                 </connections>
                             </tableViewCell>
                         </prototypes>

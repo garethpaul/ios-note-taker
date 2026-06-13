@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Restored selected-note identity by assigning `NoteDetailPush` to the
+  prototype-cell segue used to edit existing notes.
+
 ## 2026-06-12
 
 - Requested complete file protection as part of each atomic secure note archive
