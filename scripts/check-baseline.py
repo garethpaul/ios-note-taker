@@ -26,6 +26,7 @@ PROTECTED_WRITE_PLAN = ROOT / "docs/plans/2026-06-12-protected-atomic-note-write
 EDIT_SEGUE_PLAN = ROOT / "docs/plans/2026-06-13-edit-note-segue-identifier.md"
 CORRUPT_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
+UNREADABLE_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-15-unreadable-archive-write-guard.md"
 
 
 def require(condition, message, failures):
@@ -192,6 +193,7 @@ def main():
         "docs/plans/2026-06-13-edit-note-segue-identifier.md",
         "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md",
         "docs/plans/2026-06-13-location-independent-make.md",
+        "docs/plans/2026-06-15-unreadable-archive-write-guard.md",
         "img/app.gif",
     ]
 
@@ -244,6 +246,7 @@ def main():
     edit_segue_plan = EDIT_SEGUE_PLAN.read_text(encoding="utf-8") if EDIT_SEGUE_PLAN.exists() else ""
     corrupt_archive_plan = CORRUPT_ARCHIVE_PLAN.read_text(encoding="utf-8") if CORRUPT_ARCHIVE_PLAN.exists() else ""
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
+    unreadable_archive_plan = UNREADABLE_ARCHIVE_PLAN.read_text(encoding="utf-8") if UNREADABLE_ARCHIVE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
@@ -323,6 +326,8 @@ def main():
     require_order(
         store,
         [
+            "guard !archiveWritesBlocked else",
+            "return",
             "guard let url = archiveFileURL() else",
             "return",
             "NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)",
@@ -344,25 +349,27 @@ def main():
             "return nil" in get_note.group(0),
             "getNote(index:) must reject invalid note indexes instead of indexing directly",
             failures)
-    require("let data: Data" in store and
-            "data = try Data(contentsOf: fileURL)" in store and
-            "} catch {\n            notes = []\n            return\n        }\n\n        do {" in store,
-            "load must leave unreadable protected archives in place before decode handling",
+    require("private var archiveWritesBlocked = false" in store and
+            "let archiveExists = FileManager.default.fileExists(atPath: fileURL.path)" in store and
+            "data = try archiveDataLoader(fileURL)" in store and
+            "archiveWritesBlocked = archiveExists" in store,
+            "load must block writes only when an existing archive cannot be read",
             failures)
     require("let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]" in store and
             "guard let decodedNotes = try NSKeyedUnarchiver.unarchivedObject(" in store and
             ") as? [Note] else {" in store and
-            store.count("quarantineCorruptArchive(fileURL)") == 2 and
-            "notes = decodedNotes" in store,
+            store.count("archiveWritesBlocked = !quarantineCorruptArchive(fileURL)") == 2 and
+            "notes = decodedNotes\n            archiveWritesBlocked = false" in store,
             "load must quarantine thrown and wrong-root secure decode failures",
             failures)
-    require("func quarantineCorruptArchive(_ archiveURL: URL)" in store and
+    require("func quarantineCorruptArchive(_ archiveURL: URL) -> Bool" in store and
             "NoteStore.corrupt.plist" in store and
             "fileManager.fileExists(atPath: quarantineURL.path)" in store and
             "try fileManager.removeItem(at: quarantineURL)" in store and
             "try fileManager.moveItem(at: archiveURL, to: quarantineURL)" in store and
-            "applyFileProtection(quarantineURL.path)" in store,
-            "corrupt archive quarantine must replace stale quarantine and preserve file protection",
+            "applyFileProtection(quarantineURL.path)\n            return true" in store and
+            "return false" in store,
+            "corrupt archive quarantine must report whether the live path is safe to replace",
             failures)
     require_order(
         store,
@@ -370,7 +377,7 @@ def main():
             "guard let fileURL = archiveFileURL() else",
             "notes = []",
             "return",
-            "Data(contentsOf: fileURL)",
+            "archiveDataLoader(fileURL)",
         ],
         "load must fall back to an empty note list when the Documents path is unavailable",
         failures,
@@ -390,6 +397,9 @@ def main():
             "testReadableCorruptArchiveIsQuarantined" in unit_tests and
             "testWrongArchiveRootTypeIsQuarantined" in unit_tests and
             "testValidArchiveRemainsAtLivePath" in unit_tests and
+            "testUnreadableExistingArchiveBlocksReplacementUntilSuccessfulReload" in unit_tests and
+            "testMissingArchiveAllowsFirstWrite" in unit_tests and
+            "XCTAssertEqual(try Data(contentsOf: urls.archive), originalData)" in unit_tests and
             "XCTAssert(true" not in unit_tests and "testPerformanceExample" not in unit_tests,
             "NoteTakerTests must replace template tests with note-title normalization assertions",
             failures)
@@ -542,6 +552,11 @@ def main():
             "corrupt archive quarantine" in changes.lower(),
             "Docs must record readable corrupt archive quarantine",
             failures)
+    unreadable_archive_guidance = "Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe."
+    require(all(unreadable_archive_guidance in document for document in
+                [readme, security, vision, changes, read("AGENTS.md")]),
+            "Docs must record unreadable archive write blocking",
+            failures)
     require("absolute makefile path" in readme.lower() and
             "location-independent" in changes.lower(),
             "README and CHANGES must document location-independent Make verification",
@@ -572,6 +587,28 @@ def main():
                           corrupt_archive_verification,
                           re.IGNORECASE) is None,
             "corrupt note archive quarantine plan must record completed status and actual local verification",
+            failures)
+    unreadable_archive_statuses = re.findall(
+        r"^status: .+$", unreadable_archive_plan, flags=re.MULTILINE
+    )
+    unreadable_archive_verification = markdown_section(
+        unreadable_archive_plan, "Verification Completed"
+    )
+    unreadable_archive_required = (
+        "All four Make gates passed",
+        "absolute Makefile passed from `/tmp`",
+        "python3 -m py_compile scripts/check-baseline.py",
+        "hostile mutations were rejected",
+        "changed-line credential scan passed",
+        "hosted pull-request and security-alert snapshot",
+    )
+    require(unreadable_archive_statuses == ["status: completed"] and
+            all(item in unreadable_archive_verification
+                for item in unreadable_archive_required) and
+            re.search(r"\b(?:pending|todo|tbd|not run)\b",
+                      unreadable_archive_verification,
+                      re.IGNORECASE) is None,
+            "unreadable archive write-guard plan must record completed verification",
             failures)
     protected_write_status = re.findall(
         r"(?mi)^status:\s*(.+?)\s*$", protected_write_plan

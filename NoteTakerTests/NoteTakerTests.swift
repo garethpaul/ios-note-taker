@@ -67,6 +67,11 @@ class NoteTakerTests: XCTestCase {
         XCTAssertEqual(store.count(), 0)
         XCTAssertFalse(FileManager.default.fileExists(atPath: urls.archive.path))
         XCTAssertEqual(try Data(contentsOf: urls.quarantine), corruptData)
+
+        let note = store.createNote()
+        note.title = "Recovered"
+        store.updateNote(theNote: note)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: urls.archive.path))
     }
 
     func testWrongArchiveRootTypeIsQuarantined() throws {
@@ -101,6 +106,50 @@ class NoteTakerTests: XCTestCase {
         XCTAssertEqual(store.count(), 1)
         XCTAssertTrue(FileManager.default.fileExists(atPath: urls.archive.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: urls.quarantine.path))
+    }
+
+    func testUnreadableExistingArchiveBlocksReplacementUntilSuccessfulReload() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let originalNote = Note()
+        originalNote.title = "Protected"
+        let originalData = try NSKeyedArchiver.archivedData(
+            withRootObject: [originalNote],
+            requiringSecureCoding: true
+        )
+        try originalData.write(to: urls.archive)
+        var shouldFailRead = true
+        let store = NoteStore(archiveURL: urls.archive) { url in
+            if shouldFailRead {
+                throw CocoaError(.fileReadNoPermission)
+            }
+            return try Data(contentsOf: url)
+        }
+
+        _ = store.createNote()
+        XCTAssertEqual(try Data(contentsOf: urls.archive), originalData)
+
+        shouldFailRead = false
+        store.load()
+        XCTAssertEqual(store.count(), 1)
+        _ = store.createNote()
+
+        let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]
+        let decodedNotes = try NSKeyedUnarchiver.unarchivedObject(
+            ofClasses: allowedClasses,
+            from: Data(contentsOf: urls.archive)
+        ) as? [Note]
+        XCTAssertEqual(decodedNotes?.count, 2)
+    }
+
+    func testMissingArchiveAllowsFirstWrite() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let store = NoteStore(archiveURL: urls.archive)
+
+        _ = store.createNote()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: urls.archive.path))
     }
 
     func testNoteStoreGetNoteRejectsInvalidIndexes() {

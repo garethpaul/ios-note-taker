@@ -8,17 +8,21 @@ class NoteStore {
     static let sharedNoteStore = NoteStore()
 
     private let archiveURL: URL?
+    private let archiveDataLoader: (URL) throws -> Data
+    private var archiveWritesBlocked = false
 
     // Private init to force usage of singleton
     private init() {
         archiveURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
             .first?
             .appendingPathComponent("NoteStore.plist")
+        archiveDataLoader = { try Data(contentsOf: $0) }
         load()
     }
 
-    init(archiveURL: URL?) {
+    init(archiveURL: URL?, archiveDataLoader: @escaping (URL) throws -> Data = { try Data(contentsOf: $0) }) {
         self.archiveURL = archiveURL
+        self.archiveDataLoader = archiveDataLoader
         load()
     }
 
@@ -90,6 +94,9 @@ class NoteStore {
 
     // 2: Do the save to disk.....
     func save() {
+        guard !archiveWritesBlocked else {
+            return
+        }
         guard let url = archiveFileURL() else {
             return
         }
@@ -116,7 +123,7 @@ class NoteStore {
             .appendingPathComponent("NoteStore.corrupt.plist")
     }
 
-    private func quarantineCorruptArchive(_ archiveURL: URL) {
+    private func quarantineCorruptArchive(_ archiveURL: URL) -> Bool {
         let fileManager = FileManager.default
         let quarantineURL = corruptArchiveFileURL(archiveURL)
 
@@ -126,8 +133,10 @@ class NoteStore {
             }
             try fileManager.moveItem(at: archiveURL, to: quarantineURL)
             applyFileProtection(quarantineURL.path)
+            return true
         } catch {
             // Keep note content and local paths out of logs when quarantine fails.
+            return false
         }
     }
 
@@ -139,11 +148,13 @@ class NoteStore {
             return
         }
 
+        let archiveExists = FileManager.default.fileExists(atPath: fileURL.path)
         let data: Data
         do {
-            data = try Data(contentsOf: fileURL)
+            data = try archiveDataLoader(fileURL)
         } catch {
             notes = []
+            archiveWritesBlocked = archiveExists
             return
         }
 
@@ -154,13 +165,14 @@ class NoteStore {
                 from: data
             ) as? [Note] else {
                 notes = []
-                quarantineCorruptArchive(fileURL)
+                archiveWritesBlocked = !quarantineCorruptArchive(fileURL)
                 return
             }
             notes = decodedNotes
+            archiveWritesBlocked = false
         } catch {
             notes = []
-            quarantineCorruptArchive(fileURL)
+            archiveWritesBlocked = !quarantineCorruptArchive(fileURL)
         }
     }
     

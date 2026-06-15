@@ -1,6 +1,6 @@
 # Guard Writes After Unreadable Archive Loads
 
-status: planned
+status: completed
 
 ## Context
 
@@ -70,3 +70,26 @@ turns a temporary protection or I/O failure into permanent note loss.
   patterns.
 - Push a stacked pull request and take one bounded exact-head hosted and
   security-alert snapshot without polling.
+
+## Work Completed
+
+- Added explicit write-block state for existing archives that fail to read.
+- Preserved in-memory CRUD while preventing unsafe archive replacement.
+- Cleared the block after successful secure loads and completed corrupt
+  quarantine, while keeping missing first-run archives writable.
+- Added focused XCTest, static contracts, and synchronized guidance.
+
+## Verification Completed
+
+- All four Make gates passed on the exact candidate implementation; `xcodebuild`
+  was unavailable on Linux, so no local Swift compile or XCTest claim is made.
+- The absolute Makefile passed from `/tmp`.
+- `python3 -m py_compile scripts/check-baseline.py`, `sh -n build.sh`, and
+  `git diff --check` passed.
+- Seven hostile mutations were rejected across existing-file detection, early
+  save blocking, successful-load reset, quarantine reset, behavioral coverage,
+  guidance, and plan evidence.
+- Exact intended-path, generated-artifact, project/lockfile/workflow exclusion,
+  conflict-marker, whitespace, and changed-line credential scan passed.
+- The hosted pull-request and security-alert snapshot is recorded separately
+  after push; this plan claims only completed pre-push verification above.

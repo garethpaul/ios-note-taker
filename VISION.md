@@ -30,6 +30,7 @@ Priority:
 - Avoid fallback archive writes when the documents path is unavailable
 - Preserve unreadable protected archives and quarantine only readable corrupt
   archive bytes
+- Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe.
 - Maintain build script and README context
 - Keep `scripts/check-baseline.py` passing for local-first persistence,
   archive fallback behavior, storyboard guards, and note-content privacy

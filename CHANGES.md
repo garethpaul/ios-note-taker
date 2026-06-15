@@ -1,5 +1,9 @@
 # Changes
 
+## 2026-06-15
+
+- Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe.
+
 ## 2026-06-13
 
 - Made all Make verification aliases location-independent when invoked through
