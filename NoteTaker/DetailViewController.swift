@@ -40,10 +40,11 @@ class DetailViewController: UIViewController {
     }
 
 
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Whenever we leave the screen, update our note model
-        theNote.title = Note.normalizedTitle(self.noteTitleLabel.text)
-        theNote.text = self.noteTextView.text ?? ""
+    func normalizedInput() -> (title: String, text: String) {
+        return (
+            Note.normalizedTitle(noteTitleLabel.text),
+            Note.normalizedText(noteTextView.text)
+        )
     }
 
 }

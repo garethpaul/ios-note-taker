@@ -54,23 +54,34 @@ class TableViewController: UITableViewController {
             return
         }
 
-        // If there is a row selected....
-        if let indexPath = tableView.indexPathForSelectedRow {
-            // Update note in our store
-            NoteStore.sharedNoteStore.updateNote(theNote: noteDetail.theNote)
-
-            // The user was in edit mode
-            tableView.reloadRows(at: [indexPath], with: .automatic)
+        let store = NoteStore.sharedNoteStore
+        let input = noteDetail.normalizedInput()
+        if let row = store.index(of: noteDetail.theNote) {
+            guard store.persistChanges(to: noteDetail.theNote, title: input.title, text: input.text) else {
+                presentPersistenceFailure()
+                return
+            }
+            tableView.reloadRows(at: [IndexPath(row: row, section: 0)], with: .automatic)
         } else {
-            // Otherwise, add a new record
-            _ = NoteStore.sharedNoteStore.createNote(noteDetail.theNote)
-
-            // Get an index to insert the row at
-            let indexPath = IndexPath(row: NoteStore.sharedNoteStore.count() - 1, section: 0)
-
-            // Update tableview
+            noteDetail.theNote.title = input.title
+            noteDetail.theNote.text = input.text
+            guard store.persistNewNote(noteDetail.theNote) else {
+                presentPersistenceFailure()
+                return
+            }
+            let indexPath = IndexPath(row: store.count() - 1, section: 0)
             tableView.insertRows(at: [indexPath], with: .automatic)
         }
+    }
+
+    private func presentPersistenceFailure() {
+        let alert = UIAlertController(
+            title: "Note Not Saved",
+            message: "The note archive could not be updated. Your previous saved notes were left unchanged.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     // MARK: - Table view data source

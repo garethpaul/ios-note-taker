@@ -248,6 +248,7 @@ def main():
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     unreadable_archive_plan = UNREADABLE_ARCHIVE_PLAN.read_text(encoding="utf-8") if UNREADABLE_ARCHIVE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
+    test_runner = read("scripts/run-tests.sh")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -276,7 +277,7 @@ def main():
     require("class Note: NSObject, NSSecureCoding" in note and
             "static var supportsSecureCoding: Bool { true }" in note and
             'decodeObject(of: NSString.self, forKey: "title") as? String' in note and
-            'decodeObject(of: NSString.self, forKey: "text") as? String ?? ""' in note and
+            'Note.normalizedText(coder.decodeObject(of: NSString.self, forKey: "text") as? String)' in note and
             'decodeObject(of: NSDate.self, forKey: "date") as? Date ?? Date()' in note,
             "Note decoding must tolerate missing or incompatible archived fields",
             failures)
@@ -298,7 +299,7 @@ def main():
             'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in note,
             "Note must expose shared title normalization for blank note titles",
             failures)
-    require("notes.append(theNote)\n        save()" in store,
+    require("notes.append(note)\n        _ = save()" in store,
             "createNote must save after appending a note",
             failures)
     update_note = re.search(r"func updateNote[\s\S]+?\n    }", store)
@@ -306,15 +307,16 @@ def main():
             "updateNote must persist edited note content",
             failures)
     require("func deleteNote(_ index: Int) -> Bool" in store and
-            "if index < 0 || index >= notes.count" in store and
+            "guard notes.indices.contains(index) else" in store and
             "return false" in store and
-            "notes.remove(at: index)\n        save()\n        return true" in store,
+            "let removedNote = notes.remove(at: index)" in store and
+            "notes.insert(removedNote, at: index)" in store,
             "deleteNote(index:) must report success only after guarded delete saves",
             failures)
-    reference_delete = re.search(r"func deleteNote\(_ withNote: Note\) -> Bool[\s\S]+?\n    }", store)
+    reference_delete = re.search(r"func deleteNote\(_ note: Note\) -> Bool[\s\S]+?\n    }", store)
     require(reference_delete is not None and
-            "if note === withNote" in reference_delete.group(0) and
-            "notes.remove(at: i)\n                save()\n                return true" in reference_delete.group(0) and
+            "guard let index = index(of: note)" in reference_delete.group(0) and
+            "return deleteNote(index)" in reference_delete.group(0) and
             "return false" in reference_delete.group(0),
             "deleteNote(withNote:) must report whether reference deletion removed a note",
             failures)
@@ -323,51 +325,47 @@ def main():
             "NoteStore.plist" in store,
             "archiveFileURL must return nil for missing Documents paths and use the local note archive",
             failures)
-    require_order(
-        store,
-        [
-            "guard !archiveWritesBlocked else",
-            "return",
-            "guard let url = archiveFileURL() else",
-            "return",
-            "NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)",
-            "data.write(to: url, options: [.atomic, .completeFileProtection])",
-            "applyFileProtection(url.path)",
-        ],
+    require("guard !archiveWritesBlocked, let url = archiveFileURL(), archiveURLIsSafeForWriting(url) else" in store and
+            "NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)" in store and
+            "try archiveDataWriter(data, url)" in store and
+            "O_EXCL | O_NOFOLLOW" in store and
+            "fsync(descriptor)" in store and
+            "rename(temporaryURL.path, destinationURL.path)" in store and
+            "synchronizeDirectory(directoryURL)" in store,
         "save must securely archive, atomically write protected note data, and repair attributes",
         failures,
     )
-    require("func applyFileProtection(_ path: String)" in store and
+    require("func applyFileProtection(to url: URL) throws" in store and
             ".protectionKey: FileProtectionType.complete" in store and
+            ".posixPermissions: 0o600" in store and
             "setAttributes" in store,
             "NoteStore must apply complete file protection to local note archives",
             failures)
     get_note = re.search(r"func getNote[\s\S]+?\n    }", store)
     require(get_note is not None and
             "func getNote(_ index: Int) -> Note?" in get_note.group(0) and
-            "if index < 0 || index >= notes.count" in get_note.group(0) and
+            "guard notes.indices.contains(index) else" in get_note.group(0) and
             "return nil" in get_note.group(0),
             "getNote(index:) must reject invalid note indexes instead of indexing directly",
             failures)
     require("private var archiveWritesBlocked = false" in store and
-            "let archiveExists = FileManager.default.fileExists(atPath: fileURL.path)" in store and
             "data = try archiveDataLoader(fileURL)" in store and
-            "archiveWritesBlocked = archiveExists" in store,
+            "archiveWritesBlocked = true" in store and
+            "values.isSymbolicLink != true" in store,
             "load must block writes only when an existing archive cannot be read",
             failures)
     require("let allowedClasses: [AnyClass] = [NSArray.self, Note.self, NSString.self, NSDate.self]" in store and
             "guard let decodedNotes = try NSKeyedUnarchiver.unarchivedObject(" in store and
-            ") as? [Note] else {" in store and
-            store.count("archiveWritesBlocked = !quarantineCorruptArchive(fileURL)") == 2 and
+            ") as? [Note], decodedNotes.count <= NoteStore.maximumNoteCount else {" in store and
+            store.count("archiveWritesBlocked = !quarantineCorruptArchive(fileURL)") >= 2 and
             "notes = decodedNotes\n            archiveWritesBlocked = false" in store,
             "load must quarantine thrown and wrong-root secure decode failures",
             failures)
     require("func quarantineCorruptArchive(_ archiveURL: URL) -> Bool" in store and
             "NoteStore.corrupt.plist" in store and
-            "fileManager.fileExists(atPath: quarantineURL.path)" in store and
-            "try fileManager.removeItem(at: quarantineURL)" in store and
-            "try fileManager.moveItem(at: archiveURL, to: quarantineURL)" in store and
-            "applyFileProtection(quarantineURL.path)\n            return true" in store and
+            "NoteStore.corrupt-\\(UUID().uuidString).plist" in store and
+            "try FileManager.default.moveItem(at: archiveURL, to: quarantineURL)" in store and
+            "try NoteStore.applyFileProtection(to: quarantineURL)" in store and
             "return false" in store,
             "corrupt archive quarantine must report whether the live path is safe to replace",
             failures)
@@ -376,14 +374,16 @@ def main():
         [
             "guard let fileURL = archiveFileURL() else",
             "notes = []",
+            "archiveWritesBlocked = true",
             "return",
             "archiveDataLoader(fileURL)",
         ],
         "load must fall back to an empty note list when the Documents path is unavailable",
         failures,
     )
-    require("Note.normalizedTitle(self.noteTitleLabel.text)" in detail and
-            'self.noteTextView.text ?? ""' in detail,
+    require("Note.normalizedTitle(noteTitleLabel.text)" in detail and
+            "Note.normalizedText(noteTextView.text)" in detail and
+            "func normalizedInput()" in detail,
             "DetailViewController must use shared title normalization and avoid force-unwrapping note fields",
             failures)
     require("testNoteTitleNormalizationTrimsWhitespace" in unit_tests and "XCTAssertEqual" in unit_tests and
@@ -658,6 +658,12 @@ def main():
             'python-version: "3.12"' in workflow and
             "run: make check" in workflow,
             "Check workflow must pin credential-free checkout and Python 3.12 before running the canonical baseline",
+            failures)
+    require("./scripts/run-tests.sh" in workflow and
+            "-scheme NoteTakerTests" in test_runner and
+            "-parallel-testing-enabled NO" in test_runner and
+            "CODE_SIGNING_ALLOWED=NO" in test_runner,
+            "Hosted Check must execute the native XCTest suite on an available iPhone simulator",
             failures)
     require(has_unsigned_simulator_build(checker),
             "Checker must preserve the unsigned NoteTakerTests simulator build command",

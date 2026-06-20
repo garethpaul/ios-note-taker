@@ -2,159 +2,233 @@
 //  NoteStore.swift
 //
 
+import Darwin
 import Foundation
 
 class NoteStore {
     static let sharedNoteStore = NoteStore()
+    static let maximumArchiveBytes = 5 * 1024 * 1024
+    static let maximumNoteCount = 1_000
 
     private let archiveURL: URL?
     private let archiveDataLoader: (URL) throws -> Data
+    private let archiveDataWriter: (Data, URL) throws -> Void
     private var archiveWritesBlocked = false
 
-    // Private init to force usage of singleton
     private init() {
         archiveURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
             .first?
             .appendingPathComponent("NoteStore.plist")
-        archiveDataLoader = { try Data(contentsOf: $0) }
+        archiveDataLoader = { try Data(contentsOf: $0, options: [.mappedIfSafe]) }
+        archiveDataWriter = { try NoteStore.writeProtectedArchive($0, to: $1) }
         load()
     }
 
-    init(archiveURL: URL?, archiveDataLoader: @escaping (URL) throws -> Data = { try Data(contentsOf: $0) }) {
+    init(
+        archiveURL: URL?,
+        archiveDataLoader: @escaping (URL) throws -> Data = { try Data(contentsOf: $0, options: [.mappedIfSafe]) },
+        archiveDataWriter: @escaping (Data, URL) throws -> Void = { try NoteStore.writeProtectedArchive($0, to: $1) }
+    ) {
         self.archiveURL = archiveURL
         self.archiveDataLoader = archiveDataLoader
+        self.archiveDataWriter = archiveDataWriter
         load()
     }
 
-    // Array to hold our notes
     private var notes = [Note]()
 
-    // CRUD - Create, Read, Update, Delete
-
-    // Create
-
-    func createNote(_ theNote: Note = Note()) -> Note {
-        notes.append(theNote)
-        save()
-        return theNote
+    func createNote(_ note: Note = Note()) -> Note {
+        notes.append(note)
+        _ = save()
+        return note
     }
 
-    // Read
-
-    func getNote(_ index: Int) -> Note? {
-        if index < 0 || index >= notes.count {
-            return nil
-        }
-
-        return notes[index]
-    }
-
-    // Update
-    func updateNote(theNote: Note) {
-        // Notes passed by reference, no update code needed
-        save()
-    }
-
-    // Delete
-    func deleteNote(_ index: Int) -> Bool {
-        if index < 0 || index >= notes.count {
+    func persistNewNote(_ note: Note) -> Bool {
+        guard notes.count < NoteStore.maximumNoteCount else {
             return false
         }
-        notes.remove(at: index)
-        save()
+        note.normalizeStoredContent()
+        notes.append(note)
+        guard save() else {
+            notes.removeLast()
+            return false
+        }
         return true
     }
 
-    func deleteNote(_ withNote: Note) -> Bool {
-
-        for (i, note) in notes.enumerated() {
-            if note === withNote {
-                notes.remove(at: i)
-                save()
-                return true
-            }
+    func getNote(_ index: Int) -> Note? {
+        guard notes.indices.contains(index) else {
+            return nil
         }
-
-        return false
-
+        return notes[index]
     }
 
-    // Count
+    func index(of note: Note) -> Int? {
+        return notes.firstIndex { $0 === note }
+    }
+
+    @discardableResult
+    func updateNote(theNote: Note) -> Bool {
+        guard index(of: theNote) != nil else {
+            return false
+        }
+        theNote.normalizeStoredContent()
+        return save()
+    }
+
+    func persistChanges(to note: Note, title: String?, text: String?) -> Bool {
+        guard index(of: note) != nil else {
+            return false
+        }
+        let previousTitle = note.title
+        let previousText = note.text
+        note.title = Note.normalizedTitle(title)
+        note.text = Note.normalizedText(text)
+        guard save() else {
+            note.title = previousTitle
+            note.text = previousText
+            return false
+        }
+        return true
+    }
+
+    func deleteNote(_ index: Int) -> Bool {
+        guard notes.indices.contains(index) else {
+            return false
+        }
+        let removedNote = notes.remove(at: index)
+        guard save() else {
+            notes.insert(removedNote, at: index)
+            return false
+        }
+        return true
+    }
+
+    func deleteNote(_ note: Note) -> Bool {
+        guard let index = index(of: note) else {
+            return false
+        }
+        return deleteNote(index)
+    }
+
     func count() -> Int {
         return notes.count
     }
 
-
-    // Mark: Persistence
-
-    // 1: Find the file & directory we want to save to...
     func archiveFileURL() -> URL? {
         return archiveURL
     }
 
-    // 2: Do the save to disk.....
-    func save() {
-        guard !archiveWritesBlocked else {
-            return
+    @discardableResult
+    func save() -> Bool {
+        guard !archiveWritesBlocked, let url = archiveFileURL(), archiveURLIsSafeForWriting(url) else {
+            return false
         }
-        guard let url = archiveFileURL() else {
-            return
+        guard notes.count <= NoteStore.maximumNoteCount else {
+            return false
         }
+
+        notes.forEach { $0.normalizeStoredContent() }
         do {
             let data = try NSKeyedArchiver.archivedData(withRootObject: notes, requiringSecureCoding: true)
-            try data.write(to: url, options: [.atomic, .completeFileProtection])
-            applyFileProtection(url.path)
-        } catch {
-            // Keep the in-memory notes available when local persistence fails.
-        }
-    }
-
-    func applyFileProtection(_ path: String) {
-        do {
-            let attributes: [FileAttributeKey: Any] = [.protectionKey: FileProtectionType.complete]
-            try FileManager.default.setAttributes(attributes, ofItemAtPath: path)
-        } catch {
-            // Keep local note saves available when protection attributes cannot be set.
-        }
-    }
-
-    private func corruptArchiveFileURL(_ archiveURL: URL) -> URL {
-        return archiveURL.deletingLastPathComponent()
-            .appendingPathComponent("NoteStore.corrupt.plist")
-    }
-
-    private func quarantineCorruptArchive(_ archiveURL: URL) -> Bool {
-        let fileManager = FileManager.default
-        let quarantineURL = corruptArchiveFileURL(archiveURL)
-
-        do {
-            if fileManager.fileExists(atPath: quarantineURL.path) {
-                try fileManager.removeItem(at: quarantineURL)
+            guard data.count <= NoteStore.maximumArchiveBytes else {
+                return false
             }
-            try fileManager.moveItem(at: archiveURL, to: quarantineURL)
-            applyFileProtection(quarantineURL.path)
+            try archiveDataWriter(data, url)
             return true
         } catch {
-            // Keep note content and local paths out of logs when quarantine fails.
             return false
         }
     }
 
+    private func archiveURLIsSafeForWriting(_ url: URL) -> Bool {
+        guard url.isFileURL, url.standardizedFileURL.path == url.path else {
+            return false
+        }
+        let parent = url.deletingLastPathComponent()
+        guard let parentValues = try? parent.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+              parentValues.isDirectory == true,
+              parentValues.isSymbolicLink != true else {
+            return false
+        }
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            return true
+        }
+        guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]) else {
+            return false
+        }
+        return values.isRegularFile == true && values.isSymbolicLink != true
+    }
 
-    // 3: Do the reload from disk....
+    private func corruptArchiveFileURL(_ archiveURL: URL) -> URL {
+        let directory = archiveURL.deletingLastPathComponent()
+        let preferredURL = directory.appendingPathComponent("NoteStore.corrupt.plist")
+        if !FileManager.default.fileExists(atPath: preferredURL.path) {
+            return preferredURL
+        }
+        return directory.appendingPathComponent("NoteStore.corrupt-\(UUID().uuidString).plist")
+    }
+
+    private func quarantineCorruptArchive(_ archiveURL: URL) -> Bool {
+        guard archiveURLIsSafeForWriting(archiveURL) else {
+            return false
+        }
+        let quarantineURL = corruptArchiveFileURL(archiveURL)
+        do {
+            try FileManager.default.moveItem(at: archiveURL, to: quarantineURL)
+            try NoteStore.applyFileProtection(to: quarantineURL)
+            try NoteStore.synchronizeDirectory(quarantineURL.deletingLastPathComponent())
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func load() {
         guard let fileURL = archiveFileURL() else {
             notes = []
+            archiveWritesBlocked = true
             return
         }
 
-        let archiveExists = FileManager.default.fileExists(atPath: fileURL.path)
+        guard fileURL.isFileURL, fileURL.standardizedFileURL.path == fileURL.path else {
+            notes = []
+            archiveWritesBlocked = true
+            return
+        }
+
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            notes = []
+            archiveWritesBlocked = false
+            return
+        }
+
+        guard let values = try? fileURL.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey]),
+              values.isRegularFile == true,
+              values.isSymbolicLink != true else {
+            notes = []
+            archiveWritesBlocked = true
+            return
+        }
+
+        if (values.fileSize ?? NoteStore.maximumArchiveBytes + 1) > NoteStore.maximumArchiveBytes {
+            notes = []
+            archiveWritesBlocked = !quarantineCorruptArchive(fileURL)
+            return
+        }
+
         let data: Data
         do {
             data = try archiveDataLoader(fileURL)
         } catch {
             notes = []
-            archiveWritesBlocked = archiveExists
+            archiveWritesBlocked = true
+            return
+        }
+
+        guard data.count <= NoteStore.maximumArchiveBytes else {
+            notes = []
+            archiveWritesBlocked = !quarantineCorruptArchive(fileURL)
             return
         }
 
@@ -163,11 +237,12 @@ class NoteStore {
             guard let decodedNotes = try NSKeyedUnarchiver.unarchivedObject(
                 ofClasses: allowedClasses,
                 from: data
-            ) as? [Note] else {
+            ) as? [Note], decodedNotes.count <= NoteStore.maximumNoteCount else {
                 notes = []
                 archiveWritesBlocked = !quarantineCorruptArchive(fileURL)
                 return
             }
+            decodedNotes.forEach { $0.normalizeStoredContent() }
             notes = decodedNotes
             archiveWritesBlocked = false
         } catch {
@@ -175,5 +250,69 @@ class NoteStore {
             archiveWritesBlocked = !quarantineCorruptArchive(fileURL)
         }
     }
-    
+
+    private static func writeProtectedArchive(_ data: Data, to destinationURL: URL) throws {
+        let directoryURL = destinationURL.deletingLastPathComponent()
+        let temporaryURL = directoryURL.appendingPathComponent(".NoteStore-\(UUID().uuidString).tmp")
+        let descriptor = open(temporaryURL.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, S_IRUSR | S_IWUSR)
+        guard descriptor >= 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+
+        var shouldRemoveTemporaryFile = true
+        defer {
+            close(descriptor)
+            if shouldRemoveTemporaryFile {
+                try? FileManager.default.removeItem(at: temporaryURL)
+            }
+        }
+
+        try data.withUnsafeBytes { rawBuffer in
+            guard var baseAddress = rawBuffer.baseAddress else {
+                return
+            }
+            var bytesRemaining = rawBuffer.count
+            while bytesRemaining > 0 {
+                let written = Darwin.write(descriptor, baseAddress, bytesRemaining)
+                if written < 0 {
+                    if errno == EINTR { continue }
+                    throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+                }
+                bytesRemaining -= written
+                baseAddress = baseAddress.advanced(by: written)
+            }
+        }
+
+        guard fchmod(descriptor, S_IRUSR | S_IWUSR) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        try applyFileProtection(to: temporaryURL)
+        guard fsync(descriptor) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        guard rename(temporaryURL.path, destinationURL.path) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        shouldRemoveTemporaryFile = false
+        try synchronizeDirectory(directoryURL)
+    }
+
+    private static func applyFileProtection(to url: URL) throws {
+        let attributes: [FileAttributeKey: Any] = [
+            .protectionKey: FileProtectionType.complete,
+            .posixPermissions: 0o600
+        ]
+        try FileManager.default.setAttributes(attributes, ofItemAtPath: url.path)
+    }
+
+    private static func synchronizeDirectory(_ directoryURL: URL) throws {
+        let descriptor = open(directoryURL.path, O_RDONLY | O_DIRECTORY)
+        guard descriptor >= 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        defer { close(descriptor) }
+        guard fsync(descriptor) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+    }
 }

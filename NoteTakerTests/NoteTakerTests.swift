@@ -178,4 +178,112 @@ class NoteTakerTests: XCTestCase {
         XCTAssertFalse(store.deleteNote(note), "Deleting the same note reference twice should report failure")
     }
 
+    func testSecondCorruptArchivePreservesEarlierQuarantine() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let earlierCorruption = Data("earlier corruption".utf8)
+        let laterCorruption = Data("later corruption".utf8)
+        try earlierCorruption.write(to: urls.quarantine)
+        try laterCorruption.write(to: urls.archive)
+
+        _ = NoteStore(archiveURL: urls.archive)
+
+        XCTAssertEqual(try Data(contentsOf: urls.quarantine), earlierCorruption)
+        let quarantines = try FileManager.default.contentsOfDirectory(
+            at: urls.directory,
+            includingPropertiesForKeys: nil
+        ).filter { $0.lastPathComponent.hasPrefix("NoteStore.corrupt-") }
+        XCTAssertEqual(quarantines.count, 1)
+        XCTAssertEqual(try Data(contentsOf: quarantines[0]), laterCorruption)
+    }
+
+    func testOversizedArchiveIsRejectedBeforeReading() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        try Data(repeating: 0x41, count: NoteStore.maximumArchiveBytes + 1).write(to: urls.archive)
+        var loaderWasCalled = false
+
+        let store = NoteStore(archiveURL: urls.archive) { _ in
+            loaderWasCalled = true
+            return Data()
+        }
+
+        XCTAssertFalse(loaderWasCalled)
+        XCTAssertEqual(store.count(), 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls.archive.path))
+    }
+
+    func testArchiveSymlinkIsNeverFollowedOrReplaced() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let target = urls.directory.appendingPathComponent("outside.plist")
+        let protectedData = Data("do not touch".utf8)
+        try protectedData.write(to: target)
+        try FileManager.default.createSymbolicLink(at: urls.archive, withDestinationURL: target)
+
+        let store = NoteStore(archiveURL: urls.archive)
+        _ = store.createNote()
+
+        XCTAssertEqual(try Data(contentsOf: target), protectedData)
+        XCTAssertEqual(
+            try FileManager.default.destinationOfSymbolicLink(atPath: urls.archive.path),
+            target.path
+        )
+    }
+
+    func testFailedPersistenceIsReportedAndLeavesPreviousArchiveUntouched() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let originalData = Data("existing archive".utf8)
+        try originalData.write(to: urls.archive)
+        let store = NoteStore(
+            archiveURL: urls.archive,
+            archiveDataLoader: { _ in throw CocoaError(.fileReadNoPermission) },
+            archiveDataWriter: { _, _ in throw CocoaError(.fileWriteOutOfSpace) }
+        )
+
+        XCTAssertFalse(store.save())
+        XCTAssertEqual(try Data(contentsOf: urls.archive), originalData)
+    }
+
+    func testDecodedArchiveRejectsExcessiveNoteCount() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let notes = (0...NoteStore.maximumNoteCount).map { _ in Note() }
+        let data = try NSKeyedArchiver.archivedData(
+            withRootObject: notes,
+            requiringSecureCoding: true
+        )
+        try data.write(to: urls.archive)
+
+        let store = NoteStore(archiveURL: urls.archive)
+
+        XCTAssertEqual(store.count(), 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls.archive.path))
+    }
+
+    func testNoteTextAndTitleRemoveControlsAndEnforceBounds() {
+        let longTitle = "\u{202E}" + String(repeating: "a", count: Note.maximumTitleLength + 20)
+        let longText = "safe\u{0000}text" + String(repeating: "b", count: Note.maximumTextLength)
+
+        let title = Note.normalizedTitle(longTitle)
+        let text = Note.normalizedText(longText)
+
+        XCTAssertFalse(title.unicodeScalars.contains { CharacterSet.controlCharacters.contains($0) })
+        XCTAssertFalse(title.unicodeScalars.contains { CharacterSet(charactersIn: "\u{202A}"..."\u{202E}").contains($0) })
+        XCTAssertLessThanOrEqual(title.count, Note.maximumTitleLength)
+        XCTAssertFalse(text.unicodeScalars.contains { CharacterSet.controlCharacters.contains($0) && $0 != "\n" && $0 != "\t" })
+        XCTAssertLessThanOrEqual(text.count, Note.maximumTextLength)
+    }
+
+    func testStoreFindsExistingNoteByIdentity() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let store = NoteStore(archiveURL: urls.archive)
+        let existing = store.createNote(Note())
+
+        XCTAssertEqual(store.index(of: existing), 0)
+        XCTAssertNil(store.index(of: Note()))
+    }
+
 }
