@@ -1,5 +1,18 @@
 # Changes
 
+## 2026-06-15
+
+- Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe.
+
+## 2026-06-13
+
+- Made all Make verification aliases location-independent when invoked through
+  an absolute Makefile path.
+- Added protected corrupt archive quarantine after readable note data fails
+  secure decoding, while leaving unreadable protected archives in place.
+- Restored selected-note identity by assigning `NoteDetailPush` to the
+  prototype-cell segue used to edit existing notes.
+
 ## 2026-06-12
 
 - Requested complete file protection as part of each atomic secure note archive
