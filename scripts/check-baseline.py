@@ -437,16 +437,24 @@ def main():
             "build.sh must resolve the checkout root and preserve the NoteTaker project and scheme",
             failures)
     require("xcrun simctl list devices available -j" in build and
+            'xcrun simctl list devices available -j > "$devices_json"' in build and
+            'exit "$xcrun_status"' in build and
+            "Unable to list available iOS simulators." in build and
             "SIMULATOR_NAME" in build and
             'platform=iOS Simulator,id=$simulator_udid' in build and
             "No available iPhone simulator" in build and
             "iPhone 5" not in build,
-            "build.sh must select an available iPhone simulator without a retired hard-coded device",
+            "build.sh must preserve discovery failures and select an available iPhone without a retired hard-coded device",
             failures)
     require("test_selects_latest_available_iphone_and_preserves_build_authority" in build_helper_tests and
             "test_name_override_resolves_on_latest_matching_runtime" in build_helper_tests and
-            "test_fails_clearly_without_an_available_iphone" in build_helper_tests,
-            "build helper tests must cover automatic selection, explicit names, authority, and unavailable simulators",
+            "test_fails_clearly_without_an_available_iphone" in build_helper_tests and
+            "test_preserves_xcrun_failure_before_parsing_valid_json" in build_helper_tests and
+            "test_rejects_malformed_discovery_json_before_building" in build_helper_tests and
+            "test_rejects_missing_discovery_fields_before_building" in build_helper_tests and
+            "test_fails_clearly_for_an_unmatched_name_override" in build_helper_tests and
+            "test_breaks_newest_runtime_ties_by_name_then_udid" in build_helper_tests,
+            "build helper tests must cover selection, overrides, authority, discovery/parser failures, and tie-breaking",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", app_sources),
             "Note content and storage state must not be logged",

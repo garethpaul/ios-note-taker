@@ -4,6 +4,8 @@
 
 - Replaced the retired `iPhone 5` build-helper default with deterministic
   available-iPhone simulator selection and an offline behavior contract.
+- Preserved simulator discovery failures before JSON parsing and covered
+  malformed discovery output, missing fields, overrides, and deterministic ties.
 
 ## 2026-06-15
 
