@@ -21,6 +21,8 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 - `NoteTakerUITests` - source or example code
 - `SECURITY.md` - security reporting and disclosure guidance
 - `scripts/check-baseline.py` - static note persistence and project verifier
+- `scripts/test-build-helper.py` - offline simulator-selection contract for
+  `build.sh`
 - `VISION.md` - project direction and maintenance guardrails
 
 Additional scan context:
@@ -54,8 +56,10 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 ## Running or Using the Project
 
 - Open `NoteTaker.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
-- Run `./build.sh` when the required platform toolchain is installed. Set
-  `SIMULATOR_NAME` to override the legacy default simulator.
+- Run `./build.sh` when Xcode and an iPhone simulator runtime are installed. It
+  deterministically chooses an available iPhone from the newest installed iOS
+  runtime. Set `SIMULATOR_NAME` to require a specific available simulator name;
+  the helper fails clearly if no matching iPhone is installed.
 - Note title normalization trims titles and falls back to `Untitled` through a model helper covered by focused unit assertions. Decoded title values use the same fallback for archived blank titles.
 - Note lookup rejects invalid table indexes before configuring visible cells.
 - Note delete results report whether the store actually removed a row before the table view deletes it.
@@ -80,7 +84,8 @@ The `lint`, `test`, and `build` targets intentionally alias the canonical baseli
 on hosts without Xcode, so the standard local gate commands
 stay available while preserving the single source of truth.
 
-The baseline runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Swift 5 project metadata, verifies secure-coding round trips, title normalization tests, decoded title fallback behavior, corrupt archive quarantine, guarded note lookup, delete result handling, reference delete result handling, selected-note identity during edit navigation, navigation logo title view ownership, atomic local note persistence, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
+The gate first runs the offline `scripts/test-build-helper.py` simulator-selection
+contract, then runs `scripts/check-baseline.py`, parses plist/storyboard/scheme XML, checks Swift 5 project metadata, verifies secure-coding round trips, title normalization tests, decoded title fallback behavior, corrupt archive quarantine, guarded note lookup, delete result handling, reference delete result handling, selected-note identity during edit navigation, navigation logo title view ownership, atomic local note persistence, archive documents path guards, archive file protection, source inventory, no note-content logging, and no network/sync/upload/analytics behavior.
 
 The pinned, credential-free GitHub Actions check sets up Python 3.12 and runs
 `make check` on `macos-15`. The baseline compiles the unsigned Swift 5 app and

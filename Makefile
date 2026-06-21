@@ -5,4 +5,5 @@ override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 lint test build: check
 
 check:
+	python3 "$(ROOT)/scripts/test-build-helper.py"
 	python3 "$(ROOT)/scripts/check-baseline.py"

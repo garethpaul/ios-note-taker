@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-21
+
+- Replaced the retired `iPhone 5` build-helper default with deterministic
+  available-iPhone simulator selection and an offline behavior contract.
+
 ## 2026-06-15
 
 - Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe.
