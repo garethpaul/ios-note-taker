@@ -447,6 +447,8 @@ def main():
             "build.sh must preserve discovery failures and select an available iPhone without a retired hard-coded device",
             failures)
     require("test_selects_latest_available_iphone_and_preserves_build_authority" in build_helper_tests and
+            "test_source_remains_python_39_compatible" in build_helper_tests and
+            "python39_annotation_errors" in build_helper_tests and
             "test_name_override_resolves_on_latest_matching_runtime" in build_helper_tests and
             "test_fails_clearly_without_an_available_iphone" in build_helper_tests and
             "test_preserves_xcrun_failure_before_parsing_valid_json" in build_helper_tests and
@@ -454,7 +456,7 @@ def main():
             "test_rejects_missing_discovery_fields_before_building" in build_helper_tests and
             "test_fails_clearly_for_an_unmatched_name_override" in build_helper_tests and
             "test_breaks_newest_runtime_ties_by_name_then_udid" in build_helper_tests,
-            "build helper tests must cover selection, overrides, authority, discovery/parser failures, and tie-breaking",
+            "build helper tests must cover Python 3.9 compatibility, selection, overrides, authority, discovery/parser failures, and tie-breaking",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", app_sources),
             "Note content and storage state must not be logged",

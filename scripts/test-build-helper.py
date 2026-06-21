@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
+import ast
 import json
 import os
 from pathlib import Path
 import subprocess
 import tempfile
+from typing import List, Tuple, Union
 
 
 ROOT = Path(__file__).resolve().parents[1]
+RUNTIME_GENERIC_NAMES = {"dict", "frozenset", "list", "set", "tuple", "type"}
 
 
 def write_executable(path: Path, content: str) -> None:
@@ -14,12 +17,60 @@ def write_executable(path: Path, content: str) -> None:
     path.chmod(0o755)
 
 
+def python39_annotation_errors(source: str) -> List[str]:
+    tree = ast.parse(source)
+    annotations = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            annotations.extend(
+                argument.annotation
+                for argument in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]
+                if argument.annotation is not None
+            )
+            if node.args.vararg and node.args.vararg.annotation is not None:
+                annotations.append(node.args.vararg.annotation)
+            if node.args.kwarg and node.args.kwarg.annotation is not None:
+                annotations.append(node.args.kwarg.annotation)
+            if node.returns is not None:
+                annotations.append(node.returns)
+        elif isinstance(node, ast.AnnAssign):
+            annotations.append(node.annotation)
+
+    errors = []
+    for annotation in annotations:
+        for node in ast.walk(annotation):
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+                errors.append("PEP 604 union")
+            if isinstance(node, ast.Subscript):
+                if isinstance(node.value, ast.Name) and node.value.id in RUNTIME_GENERIC_NAMES:
+                    errors.append(f"runtime generic {node.value.id}")
+                if (isinstance(node.value, ast.Attribute) and
+                        isinstance(node.value.value, ast.Name) and
+                        node.value.value.id == "subprocess" and
+                        node.value.attr == "CompletedProcess"):
+                    errors.append("runtime generic subprocess.CompletedProcess")
+    return errors
+
+
+def test_source_remains_python_39_compatible() -> None:
+    for python_path in sorted((ROOT / "scripts").glob("*.py")):
+        source = python_path.read_text(encoding="utf-8")
+        assert python39_annotation_errors(source) == [], python_path
+
+    assert "PEP 604 union" in python39_annotation_errors(
+        "def incompatible(value: dict | str):\n    pass\n"
+    )
+    assert "runtime generic tuple" in python39_annotation_errors(
+        "def incompatible() -> tuple[str, list[str]]:\n    pass\n"
+    )
+
+
 def run_build_helper(
-    fixture: dict | str,
+    fixture: Union[dict, str],
     *,
     xcrun_status: int = 0,
     **overrides: str,
-) -> tuple[subprocess.CompletedProcess[str], list[str]]:
+) -> Tuple[subprocess.CompletedProcess, List[str]]:
     with tempfile.TemporaryDirectory(prefix="ios-note-taker-build-helper-") as directory:
         temporary_root = Path(directory)
         bin_directory = temporary_root / "bin"
@@ -198,6 +249,7 @@ def test_breaks_newest_runtime_ties_by_name_then_udid() -> None:
 
 
 if __name__ == "__main__":
+    test_source_remains_python_39_compatible()
     test_selects_latest_available_iphone_and_preserves_build_authority()
     test_name_override_resolves_on_latest_matching_runtime()
     test_fails_clearly_without_an_available_iphone()
@@ -206,4 +258,4 @@ if __name__ == "__main__":
     test_rejects_missing_discovery_fields_before_building()
     test_fails_clearly_for_an_unmatched_name_override()
     test_breaks_newest_runtime_ties_by_name_then_udid()
-    print("build.sh simulator selection contract passed (8 cases).")
+    print("build.sh simulator selection contract passed (8 cases; Python 3.9 compatible).")

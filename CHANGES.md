@@ -6,6 +6,8 @@
   available-iPhone simulator selection and an offline behavior contract.
 - Preserved simulator discovery failures before JSON parsing and covered
   malformed discovery output, missing fields, overrides, and deterministic ties.
+- Kept the build-helper contract executable with the documented macOS Python
+  3.9 runtime and added hostile syntax regression checks.
 
 ## 2026-06-15
 
