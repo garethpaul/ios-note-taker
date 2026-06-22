@@ -157,6 +157,7 @@ def main():
         "SECURITY.md",
         "VISION.md",
         "build.sh",
+        "scripts/test-build-helper.py",
         "NoteTaker.xcodeproj/project.pbxproj",
         "NoteTaker.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
         "NoteTaker.xcodeproj/xcshareddata/xcschemes/NoteTaker.xcscheme",
@@ -249,6 +250,7 @@ def main():
     unreadable_archive_plan = UNREADABLE_ARCHIVE_PLAN.read_text(encoding="utf-8") if UNREADABLE_ARCHIVE_PLAN.exists() else ""
     workflow = read(".github/workflows/check.yml")
     test_runner = read("scripts/run-tests.sh")
+    build_helper_tests = read("scripts/test-build-helper.py")
 
     require(app_plist.get("CFBundlePackageType") == "APPL",
             "NoteTaker Info.plist must remain an application plist",
@@ -426,14 +428,36 @@ def main():
             "Hex parser must reject partial invalid scans",
             failures)
 
-    require("function ci_build" not in build and "ci_build()" in build,
-            "build.sh must use POSIX function syntax",
-            failures)
     require("command -v xcodebuild" in build and "xcodebuild unavailable" in build,
             "build.sh must skip cleanly on hosts without Xcode",
             failures)
-    require("SIMULATOR_NAME" in build,
-            "build.sh must allow overriding the legacy simulator name",
+    require('ROOT=$(CDPATH=\'\' cd -- "$(dirname -- "$0")" && pwd)' in build and
+            'xcodebuild -project "$ROOT/NoteTaker.xcodeproj"' in build and
+            '-scheme "NoteTaker"' in build,
+            "build.sh must resolve the checkout root and preserve the NoteTaker project and scheme",
+            failures)
+    require("xcrun simctl list devices available -j" in build and
+            'xcrun simctl list devices available -j > "$devices_json"' in build and
+            'exit "$xcrun_status"' in build and
+            "Unable to list available iOS simulators." in build and
+            "SIMULATOR_NAME" in build and
+            'platform=iOS Simulator,id=$simulator_udid' in build and
+            "No available iPhone simulator" in build and
+            "iPhone 5" not in build,
+            "build.sh must preserve discovery failures and select an available iPhone without a retired hard-coded device",
+            failures)
+    require("test_selects_latest_available_iphone_and_preserves_build_authority" in build_helper_tests and
+            "test_source_remains_python_39_compatible" in build_helper_tests and
+            "run_with_python39" in build_helper_tests and
+            "runpy.run_path" in build_helper_tests and
+            "test_name_override_resolves_on_latest_matching_runtime" in build_helper_tests and
+            "test_fails_clearly_without_an_available_iphone" in build_helper_tests and
+            "test_preserves_xcrun_failure_before_parsing_valid_json" in build_helper_tests and
+            "test_rejects_malformed_discovery_json_before_building" in build_helper_tests and
+            "test_rejects_missing_discovery_fields_before_building" in build_helper_tests and
+            "test_fails_clearly_for_an_unmatched_name_override" in build_helper_tests and
+            "test_breaks_newest_runtime_ties_by_name_then_udid" in build_helper_tests,
+            "build helper tests must cover Python 3.9 compatibility, selection, overrides, authority, discovery/parser failures, and tie-breaking",
             failures)
     require(not re.search(r"\b(?:print|println|NSLog)\s*\(", app_sources),
             "Note content and storage state must not be logged",
@@ -455,9 +479,10 @@ def main():
     require(".PHONY: build check lint test" in makefile and
             "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile and
             "lint test build: check" in makefile and
+            'python3 "$(ROOT)/scripts/test-build-helper.py"' in makefile and
             'python3 "$(ROOT)/scripts/check-baseline.py"' in makefile and
             "python3 scripts/check-baseline.py" not in makefile,
-            "Makefile must expose location-independent lint, test, build, and check aliases",
+            "Makefile must expose location-independent aliases and the focused build-helper contract",
             failures)
     require("make lint" in readme and "make test" in readme and "make build" in readme and "make check" in readme and "NoteStore.plist" in readme and "local" in readme.lower() and
             "file protection" in readme.lower() and "documents path" in readme.lower() and

@@ -1,5 +1,14 @@
 # Changes
 
+## 2026-06-21
+
+- Replaced the retired `iPhone 5` build-helper default with deterministic
+  available-iPhone simulator selection and an offline behavior contract.
+- Preserved simulator discovery failures before JSON parsing and covered
+  malformed discovery output, missing fields, overrides, and deterministic ties.
+- Kept the build-helper contract executable with the documented macOS Python
+  3.9 runtime and added direct runtime compatibility regression checks.
+
 ## 2026-06-15
 
 - Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe.
