@@ -448,7 +448,8 @@ def main():
             failures)
     require("test_selects_latest_available_iphone_and_preserves_build_authority" in build_helper_tests and
             "test_source_remains_python_39_compatible" in build_helper_tests and
-            "python39_annotation_errors" in build_helper_tests and
+            "run_with_python39" in build_helper_tests and
+            "runpy.run_path" in build_helper_tests and
             "test_name_override_resolves_on_latest_matching_runtime" in build_helper_tests and
             "test_fails_clearly_without_an_available_iphone" in build_helper_tests and
             "test_preserves_xcrun_failure_before_parsing_valid_json" in build_helper_tests and

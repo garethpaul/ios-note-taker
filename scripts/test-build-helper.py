@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-import ast
 import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 from typing import List, Tuple, Union
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_GENERIC_NAMES = {"dict", "frozenset", "list", "set", "tuple", "type"}
 
 
 def write_executable(path: Path, content: str) -> None:
@@ -17,52 +16,54 @@ def write_executable(path: Path, content: str) -> None:
     path.chmod(0o755)
 
 
-def python39_annotation_errors(source: str) -> List[str]:
-    tree = ast.parse(source)
-    annotations = []
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            annotations.extend(
-                argument.annotation
-                for argument in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]
-                if argument.annotation is not None
-            )
-            if node.args.vararg and node.args.vararg.annotation is not None:
-                annotations.append(node.args.vararg.annotation)
-            if node.args.kwarg and node.args.kwarg.annotation is not None:
-                annotations.append(node.args.kwarg.annotation)
-            if node.returns is not None:
-                annotations.append(node.returns)
-        elif isinstance(node, ast.AnnAssign):
-            annotations.append(node.annotation)
+def python39_interpreter() -> str:
+    candidates = ["/usr/bin/python3", sys.executable]
+    for candidate in candidates:
+        result = subprocess.run(
+            [candidate, "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode == 0 and result.stdout.strip() == "3.9":
+            return candidate
+    raise AssertionError("Python 3.9 interpreter unavailable for compatibility checks")
 
-    errors = []
-    for annotation in annotations:
-        for node in ast.walk(annotation):
-            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
-                errors.append("PEP 604 union")
-            if isinstance(node, ast.Subscript):
-                if isinstance(node.value, ast.Name) and node.value.id in RUNTIME_GENERIC_NAMES:
-                    errors.append(f"runtime generic {node.value.id}")
-                if (isinstance(node.value, ast.Attribute) and
-                        isinstance(node.value.value, ast.Name) and
-                        node.value.value.id == "subprocess" and
-                        node.value.attr == "CompletedProcess"):
-                    errors.append("runtime generic subprocess.CompletedProcess")
-    return errors
+
+def run_with_python39(source: str, *arguments: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [python39_interpreter(), "-c", source, *arguments],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
 
 def test_source_remains_python_39_compatible() -> None:
     for python_path in sorted((ROOT / "scripts").glob("*.py")):
-        source = python_path.read_text(encoding="utf-8")
-        assert python39_annotation_errors(source) == [], python_path
+        result = run_with_python39(
+            "import runpy, sys; runpy.run_path(sys.argv[1], run_name='python39_compatibility_check')",
+            str(python_path),
+        )
+        assert result.returncode == 0, f"{python_path}: {result.stderr}"
 
-    assert "PEP 604 union" in python39_annotation_errors(
+    supported = run_with_python39(
+        "Alias = dict[str, int]\n"
+        "def supported(value: list[str]) -> dict[str, int]:\n    return {}\n"
+    )
+    assert supported.returncode == 0, supported.stderr
+
+    annotated_union = run_with_python39(
         "def incompatible(value: dict | str):\n    pass\n"
     )
-    assert "runtime generic tuple" in python39_annotation_errors(
-        "def incompatible() -> tuple[str, list[str]]:\n    pass\n"
+    assert annotated_union.returncode != 0
+    assert "TypeError" in annotated_union.stderr
+
+    alias_union = run_with_python39(
+        "Alias = dict | str\n"
     )
+    assert alias_union.returncode != 0
+    assert "TypeError" in alias_union.stderr
 
 
 def run_build_helper(
