@@ -119,9 +119,20 @@ class TableViewController: UITableViewController {
             if NoteStore.sharedNoteStore.deleteNote(indexPath.row) {
                 // Delete the note from the tableview
                 tableView.deleteRows(at: [indexPath], with: .fade)
+            } else {
+                presentDeletionFailure()
             }
         }
     }
 
+    private func presentDeletionFailure() {
+        let alert = UIAlertController(
+            title: "Note Not Deleted",
+            message: "The note archive could not be updated. Your saved note was left unchanged.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
 
 }

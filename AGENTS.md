@@ -46,6 +46,7 @@
 - Keep signing files, local xcconfig files, and environment files out of git.
 - Notes can contain sensitive personal information. Keep note content local by default, avoid logging note content, and require explicit design before adding sync, upload, analytics, or export behavior.
 - Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe.
+- Failed note deletion writes must retain the restored row and show deletion-specific local feedback.
 - `scripts/check-baseline.py` verifies protected atomic local persistence saves, explicit archive file-protection repair, archive fallback behavior, storyboard cast guards, invalid hex fallback, and static privacy guardrails.
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
