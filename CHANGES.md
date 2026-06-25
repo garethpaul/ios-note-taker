@@ -1,5 +1,58 @@
 # Changes
 
+## 2026-06-25 05:44 - P1 - Explain failed note deletions
+
+### Summary
+Kept transactionally restored notes visible and added deletion-specific local
+feedback when the protected archive cannot persist a delete.
+
+### Work completed
+- Added an explicit failed branch to table-row deletion handling.
+- Presented a content-free alert stating that the saved note was unchanged.
+- Added XCTest coverage for failed-delete rollback and note identity.
+- Added a mutation-sensitive static controller contract and completed plan.
+- Tightened the contract after a removed-call mutation showed that a helper
+  declaration alone could satisfy the first source check.
+- Limited row deletion to the single success branch after a failure-branch row
+  deletion mutation exposed another false pass.
+
+### Threads
+- Started: none — work completed directly in the current repository.
+- Continued: none.
+- Stopped: none.
+
+### Files changed
+- `NoteTaker/TableViewController.swift` — reports failed deletion persistence.
+- `NoteTakerTests/NoteTakerTests.swift` — covers transactional delete rollback.
+- `scripts/check-baseline.py` — enforces failure feedback and plan evidence.
+- Documentation and plan files — record user-visible and privacy behavior.
+
+### Validation
+- `python3 scripts/check-baseline.py` — failed on the missing feedback contract
+  before implementation and passed afterward.
+- `make lint`, `make test`, `make build`, and `make check` — passed through an
+  isolated `uv` Python 3.9 runtime; `xcodebuild` was unavailable locally.
+- Four isolated hostile mutations removing feedback, deleting the restored row,
+  using misleading copy, or weakening rollback evidence were rejected.
+- Python compilation and `git diff --check` — passed.
+- Codex review — clean with no actionable findings; its parallel Python 3.9
+  Make gate passed.
+- Hosted push baseline run `28171104244`, pull-request baseline run
+  `28171106051`, and CodeQL run `28171104187` passed on reviewed head
+  `2db70c94e99d8c89f3ad342e878e905fa27911aa`, including Swift XCTest/build
+  and actions, Python, and Swift analysis.
+
+### Bugs / findings
+- P1: a failed protected archive delete restored the note correctly but gave no
+  user feedback, making the swipe action appear broken.
+
+### Blockers
+- Current-Xcode compilation and XCTest require hosted macOS because the local
+  Linux host has no `xcodebuild`.
+
+### Next action
+- Revalidate the evidence-only amendment, then merge PR #13 on exact green head.
+
 ## 2026-06-21
 
 - Replaced the retired `iPhone 5` build-helper default with deterministic

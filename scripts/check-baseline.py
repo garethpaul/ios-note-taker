@@ -27,6 +27,7 @@ EDIT_SEGUE_PLAN = ROOT / "docs/plans/2026-06-13-edit-note-segue-identifier.md"
 CORRUPT_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md"
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 UNREADABLE_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-15-unreadable-archive-write-guard.md"
+DELETE_FAILURE_PLAN = ROOT / "docs/plans/2026-06-25-delete-persistence-feedback.md"
 
 
 def require(condition, message, failures):
@@ -48,6 +49,27 @@ def markdown_section(text, heading):
 
 def strip_swift_line_comments(text):
     return "\n".join(line.split("//", 1)[0] for line in text.splitlines())
+
+
+def swift_function_body(text, signature):
+    start = text.find(signature)
+    if start == -1:
+        return ""
+
+    body_start = text.find("{", start)
+    if body_start == -1:
+        return ""
+
+    depth = 0
+    for index in range(body_start, len(text)):
+        character = text[index]
+        if character == "{":
+            depth += 1
+        elif character == "}":
+            depth -= 1
+            if depth == 0:
+                return text[body_start + 1:index]
+    return ""
 
 
 def require_order(text, tokens, message, failures):
@@ -195,6 +217,7 @@ def main():
         "docs/plans/2026-06-13-corrupt-note-archive-quarantine.md",
         "docs/plans/2026-06-13-location-independent-make.md",
         "docs/plans/2026-06-15-unreadable-archive-write-guard.md",
+        "docs/plans/2026-06-25-delete-persistence-feedback.md",
         "img/app.gif",
     ]
 
@@ -220,6 +243,7 @@ def main():
     store = read("NoteTaker/NoteStore.swift")
     detail = read("NoteTaker/DetailViewController.swift")
     table = read("NoteTaker/TableViewController.swift")
+    active_table = strip_swift_line_comments(table)
     unit_tests = read("NoteTakerTests/NoteTakerTests.swift")
     hex_source = read("NoteTaker/Hex.swift")
     app_sources = "\n".join(strip_swift_line_comments(path.read_text(encoding="utf-8", errors="replace"))
@@ -248,6 +272,15 @@ def main():
     corrupt_archive_plan = CORRUPT_ARCHIVE_PLAN.read_text(encoding="utf-8") if CORRUPT_ARCHIVE_PLAN.exists() else ""
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     unreadable_archive_plan = UNREADABLE_ARCHIVE_PLAN.read_text(encoding="utf-8") if UNREADABLE_ARCHIVE_PLAN.exists() else ""
+    delete_failure_plan = DELETE_FAILURE_PLAN.read_text(encoding="utf-8") if DELETE_FAILURE_PLAN.exists() else ""
+    delete_handler = swift_function_body(
+        active_table,
+        "override func tableView(_ tableView: UITableView, commit editingStyle:",
+    )
+    delete_failure_alert = swift_function_body(
+        active_table,
+        "private func presentDeletionFailure()",
+    )
     workflow = read(".github/workflows/check.yml")
     test_runner = read("scripts/run-tests.sh")
     build_helper_tests = read("scripts/test-build-helper.py")
@@ -413,9 +446,20 @@ def main():
             has_note_detail_storyboard_contract(),
             "Storyboard edit routing must pass the selected note through the unique cell-owned NoteDetailPush segue",
             failures)
-    require("if NoteStore.sharedNoteStore.deleteNote(indexPath.row)" in table and
-            "tableView.deleteRows(at: [indexPath], with: .fade)" in table,
-            "TableViewController must delete visible rows only after store deletion succeeds",
+    require(re.search(
+                r"if NoteStore\.sharedNoteStore\.deleteNote\(indexPath\.row\)\s*\{"
+                r"[\s\S]*tableView\.deleteRows\(at: \[indexPath\], with: \.fade\)"
+                r"[\s\S]*\}\s*else\s*\{[\s\S]*presentDeletionFailure\(\)",
+                delete_handler,
+            ) is not None and
+            delete_handler.count("tableView.deleteRows(at: [indexPath], with: .fade)") == 1 and
+            'title: "Note Not Deleted"' in delete_failure_alert and
+            "Your saved note was left unchanged." in delete_failure_alert and
+            "present(alert, animated: true)" in delete_failure_alert and
+            "func testFailedDeleteRestoresTheSavedNote() throws" in unit_tests and
+            "XCTAssertFalse(store.deleteNote(0))" in unit_tests and
+            "XCTAssertTrue(store.getNote(0) === note)" in unit_tests,
+            "TableViewController must delete visible rows only after persistence succeeds and explain failures",
             failures)
     require("guard let theNote = NoteStore.sharedNoteStore.getNote(rowNumber) else" in table and
             "return cell" in table,
@@ -550,6 +594,12 @@ def main():
             "All four Make gates" in edit_segue_plan and
             "hostile mutations" in edit_segue_plan.lower(),
             "edit note segue plan must record completed status and verification",
+            failures)
+    require("status: completed" in delete_failure_plan and
+            "failed-delete rollback" in delete_failure_plan and
+            "UIAlertController" in delete_failure_plan and
+            "hostile mutations" in delete_failure_plan.lower(),
+            "delete persistence feedback plan must record completed rollback and UI verification",
             failures)
     location_make_statuses = re.findall(
         r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE

@@ -178,6 +178,29 @@ class NoteTakerTests: XCTestCase {
         XCTAssertFalse(store.deleteNote(note), "Deleting the same note reference twice should report failure")
     }
 
+    func testFailedDeleteRestoresTheSavedNote() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        var shouldFailWrite = false
+        let store = NoteStore(
+            archiveURL: urls.archive,
+            archiveDataWriter: { data, url in
+                if shouldFailWrite {
+                    throw CocoaError(.fileWriteOutOfSpace)
+                }
+                try data.write(to: url)
+            }
+        )
+        let note = Note()
+        note.title = "Keep me"
+        XCTAssertTrue(store.persistNewNote(note))
+        shouldFailWrite = true
+
+        XCTAssertFalse(store.deleteNote(0))
+        XCTAssertEqual(store.count(), 1)
+        XCTAssertTrue(store.getNote(0) === note)
+    }
+
     func testSecondCorruptArchivePreservesEarlierQuarantine() throws {
         let urls = try temporaryArchiveURLs()
         defer { try? FileManager.default.removeItem(at: urls.directory) }
