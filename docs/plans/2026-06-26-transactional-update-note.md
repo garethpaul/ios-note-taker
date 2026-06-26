@@ -42,4 +42,9 @@ hosted verification includes hostile mutations that remove snapshot lookup,
 title rollback, text rollback, and snapshot refresh evidence.
 All four Python 3.9 Make aliases and the external-Makefile gate passed, along
 with Python compilation and `git diff --check`. Local `xcodebuild` is
-unavailable, so hosted macOS remains authoritative for Swift and XCTest.
+unavailable, so hosted macOS remains authoritative for Swift and XCTest. Push
+Check run `28267525297`, pull-request Check run `28267527105` attempt 2, and
+CodeQL run `28267526088` passed on implementation head
+`3fd508c195eb7cf910eeecf4c3087e7a95a77804`. Codex review stopped before
+analysis with OpenAI HTTP 401; immutable manual review found no actionable
+issues. The evidence-only final head must repeat hosted validation before merge.

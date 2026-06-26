@@ -25,7 +25,12 @@ persisted title and text when the protected archive write fails.
 - All four Python 3.9 Make aliases and the external-Makefile `check` gate passed,
   including eight build-helper cases and the complete static baseline.
 - Python compilation and `git diff --check` passed.
-- Hosted Xcode/XCTest and exact-head review remain the final pre-merge gates.
+- Hosted push Check run `28267525297`, pull-request Check run `28267527105`
+  attempt 2, and CodeQL run `28267526088` passed on implementation head
+  `3fd508c195eb7cf910eeecf4c3087e7a95a77804`, including the full XCTest suite
+  and actions, Python, and Swift analysis.
+- Codex review was attempted against `origin/master` but stopped before analysis
+  with OpenAI HTTP 401; immutable manual review found no actionable issues.
 
 ### Bugs / findings
 
@@ -34,7 +39,7 @@ persisted title and text when the protected archive write fails.
 
 ### Next action
 
-- Run all local gates, exact-head review, and hosted Xcode/XCTest before merge.
+- Re-run exact-head hosted gates after this evidence-only amendment, then merge.
 
 ## 2026-06-26 - P1 - Make convenience creation transactional
 
