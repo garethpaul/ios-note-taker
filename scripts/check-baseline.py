@@ -28,6 +28,7 @@ CORRUPT_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-13-corrupt-note-archive-quaran
 LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independent-make.md"
 UNREADABLE_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-15-unreadable-archive-write-guard.md"
 DELETE_FAILURE_PLAN = ROOT / "docs/plans/2026-06-25-delete-persistence-feedback.md"
+TRANSACTIONAL_CREATE_PLAN = ROOT / "docs/plans/2026-06-26-transactional-create-note.md"
 
 
 def require(condition, message, failures):
@@ -218,6 +219,7 @@ def main():
         "docs/plans/2026-06-13-location-independent-make.md",
         "docs/plans/2026-06-15-unreadable-archive-write-guard.md",
         "docs/plans/2026-06-25-delete-persistence-feedback.md",
+        "docs/plans/2026-06-26-transactional-create-note.md",
         "img/app.gif",
     ]
 
@@ -273,6 +275,7 @@ def main():
     location_independent_make_plan = LOCATION_INDEPENDENT_MAKE_PLAN.read_text(encoding="utf-8") if LOCATION_INDEPENDENT_MAKE_PLAN.exists() else ""
     unreadable_archive_plan = UNREADABLE_ARCHIVE_PLAN.read_text(encoding="utf-8") if UNREADABLE_ARCHIVE_PLAN.exists() else ""
     delete_failure_plan = DELETE_FAILURE_PLAN.read_text(encoding="utf-8") if DELETE_FAILURE_PLAN.exists() else ""
+    transactional_create_plan = TRANSACTIONAL_CREATE_PLAN.read_text(encoding="utf-8") if TRANSACTIONAL_CREATE_PLAN.exists() else ""
     delete_handler = swift_function_body(
         active_table,
         "override func tableView(_ tableView: UITableView, commit editingStyle:",
@@ -334,8 +337,13 @@ def main():
             'trimmedTitle.isEmpty ? "Untitled" : trimmedTitle' in note,
             "Note must expose shared title normalization for blank note titles",
             failures)
-    require("notes.append(note)\n        _ = save()" in store,
-            "createNote must save after appending a note",
+    create_note = re.search(r"func createNote[\s\S]+?\n    }", store)
+    require(create_note is not None and
+            "_ = persistNewNote(note)" in create_note.group(0) and
+            "notes.append(note)" not in create_note.group(0) and
+            "_ = save()" not in create_note.group(0) and
+            "testCreateNoteDoesNotRetainUnsavedNoteWhenArchiveWriteFails" in unit_tests,
+            "createNote must use transactional insertion and keep failed notes out of memory",
             failures)
     update_note = re.search(r"func updateNote[\s\S]+?\n    }", store)
     require(update_note is not None and "save()" in update_note.group(0),
@@ -600,6 +608,12 @@ def main():
             "UIAlertController" in delete_failure_plan and
             "hostile mutations" in delete_failure_plan.lower(),
             "delete persistence feedback plan must record completed rollback and UI verification",
+            failures)
+    require("status: completed" in transactional_create_plan and
+            "persistNewNote" in transactional_create_plan and
+            "failed notes out of memory" in transactional_create_plan and
+            "hostile mutations" in transactional_create_plan.lower(),
+            "transactional create-note plan must record completed rollback verification",
             failures)
     location_make_statuses = re.findall(
         r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE

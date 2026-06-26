@@ -38,8 +38,7 @@ class NoteStore {
     private var notes = [Note]()
 
     func createNote(_ note: Note = Note()) -> Note {
-        notes.append(note)
-        _ = save()
+        _ = persistNewNote(note)
         return note
     }
 
