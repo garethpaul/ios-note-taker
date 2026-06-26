@@ -215,6 +215,38 @@ class NoteTakerTests: XCTestCase {
         XCTAssertNil(store.index(of: note))
     }
 
+    func testFailedLegacyUpdateRestoresLastPersistedContent() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        var writes = 0
+        let store = NoteStore(
+            archiveURL: urls.archive,
+            archiveDataWriter: { data, url in
+                writes += 1
+                if writes > 2 {
+                    throw CocoaError(.fileWriteOutOfSpace)
+                }
+                try data.write(to: url)
+            }
+        )
+        let note = Note()
+        note.title = "Saved title"
+        note.text = "Saved text"
+        XCTAssertTrue(store.persistNewNote(note))
+
+        note.title = "New saved title"
+        note.text = "New saved text"
+        XCTAssertTrue(store.updateNote(theNote: note))
+
+        note.title = "Unsaved title"
+        note.text = "Unsaved text"
+
+        XCTAssertFalse(store.updateNote(theNote: note))
+        XCTAssertEqual(note.title, "New saved title")
+        XCTAssertEqual(note.text, "New saved text")
+        XCTAssertTrue(store.getNote(0) === note)
+    }
+
     func testSecondCorruptArchivePreservesEarlierQuarantine() throws {
         let urls = try temporaryArchiveURLs()
         defer { try? FileManager.default.removeItem(at: urls.directory) }

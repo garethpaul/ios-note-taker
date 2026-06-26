@@ -6,6 +6,11 @@ import Darwin
 import Foundation
 
 class NoteStore {
+    private struct PersistedContent {
+        let title: String
+        let text: String
+    }
+
     static let sharedNoteStore = NoteStore()
     static let maximumArchiveBytes = 5 * 1024 * 1024
     static let maximumNoteCount = 1_000
@@ -14,6 +19,7 @@ class NoteStore {
     private let archiveDataLoader: (URL) throws -> Data
     private let archiveDataWriter: (Data, URL) throws -> Void
     private var archiveWritesBlocked = false
+    private var persistedContents = [ObjectIdentifier: PersistedContent]()
 
     private init() {
         archiveURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
@@ -68,11 +74,17 @@ class NoteStore {
 
     @discardableResult
     func updateNote(theNote: Note) -> Bool {
-        guard index(of: theNote) != nil else {
+        guard index(of: theNote) != nil,
+              let previous = persistedContents[ObjectIdentifier(theNote)] else {
             return false
         }
         theNote.normalizeStoredContent()
-        return save()
+        guard save() else {
+            theNote.title = previous.title
+            theNote.text = previous.text
+            return false
+        }
+        return true
     }
 
     func persistChanges(to note: Note, title: String?, text: String?) -> Bool {
@@ -134,6 +146,7 @@ class NoteStore {
                 return false
             }
             try archiveDataWriter(data, url)
+            recordPersistedContents()
             return true
         } catch {
             return false
@@ -184,6 +197,7 @@ class NoteStore {
     }
 
     func load() {
+        persistedContents.removeAll()
         guard let fileURL = archiveFileURL() else {
             notes = []
             archiveWritesBlocked = true
@@ -244,10 +258,22 @@ class NoteStore {
             decodedNotes.forEach { $0.normalizeStoredContent() }
             notes = decodedNotes
             archiveWritesBlocked = false
+            recordPersistedContents()
         } catch {
             notes = []
             archiveWritesBlocked = !quarantineCorruptArchive(fileURL)
         }
+    }
+
+    private func recordPersistedContents() {
+        var contents = [ObjectIdentifier: PersistedContent]()
+        notes.forEach { note in
+            contents[ObjectIdentifier(note)] = PersistedContent(
+                title: note.title,
+                text: note.text
+            )
+        }
+        persistedContents = contents
     }
 
     private static func writeProtectedArchive(_ data: Data, to destinationURL: URL) throws {

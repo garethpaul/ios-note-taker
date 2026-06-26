@@ -29,6 +29,7 @@ LOCATION_INDEPENDENT_MAKE_PLAN = ROOT / "docs/plans/2026-06-13-location-independ
 UNREADABLE_ARCHIVE_PLAN = ROOT / "docs/plans/2026-06-15-unreadable-archive-write-guard.md"
 DELETE_FAILURE_PLAN = ROOT / "docs/plans/2026-06-25-delete-persistence-feedback.md"
 TRANSACTIONAL_CREATE_PLAN = ROOT / "docs/plans/2026-06-26-transactional-create-note.md"
+TRANSACTIONAL_UPDATE_PLAN = ROOT / "docs/plans/2026-06-26-transactional-update-note.md"
 
 
 def require(condition, message, failures):
@@ -220,6 +221,7 @@ def main():
         "docs/plans/2026-06-15-unreadable-archive-write-guard.md",
         "docs/plans/2026-06-25-delete-persistence-feedback.md",
         "docs/plans/2026-06-26-transactional-create-note.md",
+        "docs/plans/2026-06-26-transactional-update-note.md",
         "img/app.gif",
     ]
 
@@ -276,6 +278,7 @@ def main():
     unreadable_archive_plan = UNREADABLE_ARCHIVE_PLAN.read_text(encoding="utf-8") if UNREADABLE_ARCHIVE_PLAN.exists() else ""
     delete_failure_plan = DELETE_FAILURE_PLAN.read_text(encoding="utf-8") if DELETE_FAILURE_PLAN.exists() else ""
     transactional_create_plan = TRANSACTIONAL_CREATE_PLAN.read_text(encoding="utf-8") if TRANSACTIONAL_CREATE_PLAN.exists() else ""
+    transactional_update_plan = TRANSACTIONAL_UPDATE_PLAN.read_text(encoding="utf-8") if TRANSACTIONAL_UPDATE_PLAN.exists() else ""
     delete_handler = swift_function_body(
         active_table,
         "override func tableView(_ tableView: UITableView, commit editingStyle:",
@@ -346,8 +349,17 @@ def main():
             "createNote must use transactional insertion and keep failed notes out of memory",
             failures)
     update_note = re.search(r"func updateNote[\s\S]+?\n    }", store)
-    require(update_note is not None and "save()" in update_note.group(0),
-            "updateNote must persist edited note content",
+    require(update_note is not None and
+            "persistedContents[ObjectIdentifier(theNote)]" in update_note.group(0) and
+            "theNote.title = previous.title" in update_note.group(0) and
+            "theNote.text = previous.text" in update_note.group(0) and
+            "testFailedLegacyUpdateRestoresLastPersistedContent" in unit_tests,
+            "updateNote must restore last persisted content after failed archive writes",
+            failures)
+    require("private var persistedContents = [ObjectIdentifier: PersistedContent]()" in store and
+            "persistedContents.removeAll()" in store and
+            store.count("recordPersistedContents()") == 3,
+            "NoteStore must refresh persisted-content snapshots after successful load and save",
             failures)
     require("func deleteNote(_ index: Int) -> Bool" in store and
             "guard notes.indices.contains(index) else" in store and
@@ -614,6 +626,11 @@ def main():
             "failed notes out of memory" in transactional_create_plan and
             "hostile mutations" in transactional_create_plan.lower(),
             "transactional create-note plan must record completed rollback verification",
+            failures)
+    require("status: completed" in transactional_update_plan and
+            "last successful snapshot" in transactional_update_plan and
+            "hostile mutations" in transactional_update_plan.lower(),
+            "transactional update-note plan must record completed rollback verification",
             failures)
     location_make_statuses = re.findall(
         r"^status: .+$", location_independent_make_plan, flags=re.MULTILINE
