@@ -64,6 +64,8 @@ The checked-in project has no external dependency manifest. Use Xcode for full b
 - Note lookup rejects invalid table indexes before configuring visible cells.
 - Note delete results report whether the store actually removed a row before the table view deletes it.
 - Failed note deletions leave the restored row visible and present a local alert explaining that the saved note was unchanged.
+- Failed legacy `updateNote` writes restore the same note object's last
+  successfully persisted title and text.
 - Reference delete results report whether the requested note object was removed.
 - The mini logo is scoped to each navigation item title view instead of being
   added as a navigation-controller overlay.
@@ -121,6 +123,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-10-note-reference-delete-result.md` for the reference delete result guardrail.
 - See `docs/plans/2026-06-25-delete-persistence-feedback.md` for delete-failure rollback and user feedback.
 - See `docs/plans/2026-06-26-transactional-create-note.md` for failed-create rollback through the shared persistence boundary.
+- See `docs/plans/2026-06-26-transactional-update-note.md` for failed legacy
+  update rollback through last-successful content snapshots.
 - See `docs/plans/2026-06-09-navigation-logo-title-view.md` for the navigation logo title view guardrail.
 - See `docs/plans/2026-06-13-edit-note-segue-identifier.md` for the existing-note
   edit routing guardrail.

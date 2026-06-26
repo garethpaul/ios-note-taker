@@ -23,6 +23,7 @@ Priority:
 - Keep note lookup guarded against stale or invalid table indexes
 - Keep note delete result handling aligned between the store and table view
 - Keep every note insertion path transactional on archive write failure
+- Keep legacy note updates transactional on archive write failure
 - Keep failed deletions visible and explain that the saved note remains unchanged
 - Keep reference delete result handling explicit for object-based deletes
 - Keep selected-note identity aligned between cell-owned edit segues and the

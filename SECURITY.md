@@ -29,6 +29,8 @@ Helpful reports include:
 - Unreadable existing note archives block persistence writes until a successful secure load or completed corrupt-archive quarantine makes replacement safe.
 - Convenience creation uses transactional insertion so an archive write failure
   cannot retain an unsaved note only in process memory.
+- Failed legacy update writes restore the same stored note's last successfully
+  persisted title and text instead of retaining unsaved mutations in memory.
 - Failed note deletion writes must restore the in-memory note, keep its row visible, and explain locally that the saved note was unchanged.
 - Persistence, archive decoding, export, sharing, sync, analytics, or network changes should receive security-focused review before merge.
 - Run `make check` before merging changes; it verifies plist/storyboard/scheme metadata, secure coding, protected atomic archive writes, title normalization, decoded title fallback behavior, corrupt archive quarantine, guarded note lookup, delete result handling, reference delete result handling, selected-note identity during edit navigation, navigation logo title view ownership, file-protection repair, archive fallback behavior, source inventory, and note-content privacy guardrails.

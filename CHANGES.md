@@ -1,5 +1,41 @@
 # Changes
 
+## 2026-06-26 14:55 PDT - P1 - Roll back failed legacy note updates
+
+### Summary
+
+Made `updateNote(theNote:)` restore the same note object's last successfully
+persisted title and text when the protected archive write fails.
+
+### Work completed
+
+- Added per-object persisted content snapshots refreshed only after successful
+  load or save.
+- Restored title and text after legacy update failure while preserving identity,
+  date, normalization, archive format, and newer edit APIs.
+- Added focused XCTest and four hostile portable mutations.
+
+### Validation
+
+- The native regression was written first; local Xcode is unavailable.
+- The portable contract failed on the missing snapshot rollback before
+  implementation and passed afterward.
+- Hostile mutations removing snapshot lookup, title rollback, text rollback,
+  or successful-save snapshot refresh all failed closed.
+- All four Python 3.9 Make aliases and the external-Makefile `check` gate passed,
+  including eight build-helper cases and the complete static baseline.
+- Python compilation and `git diff --check` passed.
+- Hosted Xcode/XCTest and exact-head review remain the final pre-merge gates.
+
+### Bugs / findings
+
+- P1: the legacy update API returned false on write failure but left unsaved
+  mutated fields in the in-memory store.
+
+### Next action
+
+- Run all local gates, exact-head review, and hosted Xcode/XCTest before merge.
+
 ## 2026-06-26 - P1 - Make convenience creation transactional
 
 - Routed `createNote` through `persistNewNote` while preserving its return type.
