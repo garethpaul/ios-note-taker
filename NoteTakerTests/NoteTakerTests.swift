@@ -201,6 +201,20 @@ class NoteTakerTests: XCTestCase {
         XCTAssertTrue(store.getNote(0) === note)
     }
 
+    func testCreateNoteDoesNotRetainUnsavedNoteWhenArchiveWriteFails() throws {
+        let urls = try temporaryArchiveURLs()
+        defer { try? FileManager.default.removeItem(at: urls.directory) }
+        let store = NoteStore(
+            archiveURL: urls.archive,
+            archiveDataWriter: { _, _ in throw CocoaError(.fileWriteOutOfSpace) }
+        )
+        let note = Note()
+
+        XCTAssertTrue(store.createNote(note) === note)
+        XCTAssertEqual(store.count(), 0)
+        XCTAssertNil(store.index(of: note))
+    }
+
     func testSecondCorruptArchivePreservesEarlierQuarantine() throws {
         let urls = try temporaryArchiveURLs()
         defer { try? FileManager.default.removeItem(at: urls.directory) }

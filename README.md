@@ -120,6 +120,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-09-note-delete-result-guard.md` for the note delete result guardrail.
 - See `docs/plans/2026-06-10-note-reference-delete-result.md` for the reference delete result guardrail.
 - See `docs/plans/2026-06-25-delete-persistence-feedback.md` for delete-failure rollback and user feedback.
+- See `docs/plans/2026-06-26-transactional-create-note.md` for failed-create rollback through the shared persistence boundary.
 - See `docs/plans/2026-06-09-navigation-logo-title-view.md` for the navigation logo title view guardrail.
 - See `docs/plans/2026-06-13-edit-note-segue-identifier.md` for the existing-note
   edit routing guardrail.

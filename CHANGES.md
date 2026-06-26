@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-26 - P1 - Make convenience creation transactional
+
+- Routed `createNote` through `persistNewNote` while preserving its return type.
+- Added XCTest proving a failed archive write leaves the returned note outside
+  the store rather than retaining unsaved in-memory state.
+- Added mutation-sensitive source, test, plan, and privacy contracts.
+
 ## 2026-06-25 05:44 - P1 - Explain failed note deletions
 
 ### Summary
